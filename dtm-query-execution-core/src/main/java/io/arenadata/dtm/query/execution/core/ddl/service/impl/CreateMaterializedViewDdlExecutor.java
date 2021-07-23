@@ -41,10 +41,9 @@ import io.vertx.core.Future;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.calcite.sql.SqlCharStringLiteral;
-import org.apache.calcite.sql.SqlDialect;
-import org.apache.calcite.sql.SqlKind;
-import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.*;
+import org.apache.calcite.sql.ddl.SqlColumnDeclaration;
+import org.apache.calcite.sql.parser.SqlParserPos;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -231,8 +230,67 @@ public class CreateMaterializedViewDdlExecutor extends QueryResultDdlExecutor {
     @SneakyThrows
     protected void replaceSqlSelectQuery(DdlRequestContext context, SqlNode newSelectNode) {
         val sql = (SqlCreateMaterializedView) context.getSqlNode();
+        val selectList = ((SqlSelect) newSelectNode).getSelectList();
+
+        if (selectList != null) {
+            SqlNodeList updatedSelectList = withColumnAliases(selectList, sql.getColumnList(), sql.getName().toString());
+            ((SqlSelect) newSelectNode).setSelectList(updatedSelectList);
+        }
+
         val newSql = new SqlCreateMaterializedView(sql.getParserPosition(), sql.getName(), sql.getColumnList(), sql.getDistributedBy(), sql.getDestination(), newSelectNode);
         context.setSqlNode(newSql);
+    }
+
+    private SqlNodeList withColumnAliases(SqlNodeList selectList, SqlNodeList matViewColumns, String matView) {
+        SqlNodeList updatedSelectList = new SqlNodeList(selectList.getParserPosition());
+
+        val matViewColumnsCount = (int) matViewColumns.getList().stream()
+                .filter(sqlNode -> sqlNode instanceof SqlColumnDeclaration)
+                .count();
+        val queryColumnsCount = selectList.size();
+        if (queryColumnsCount != matViewColumnsCount) {
+            throw MaterializedViewValidationException.columnCountConflict(matView, matViewColumnsCount, queryColumnsCount);
+        }
+
+        for (int i = 0; i < queryColumnsCount; i++) {
+            SqlNode current = selectList.get(i);
+
+            SqlBasicCall expression;
+            if (current instanceof SqlBasicCall) {
+                expression = (SqlBasicCall) current;
+                List<SqlNode> operands = expression.getOperandList();
+
+                if (expression.getOperator().getKind() == SqlKind.AS) {
+                    SqlIdentifier newAlias = ((SqlIdentifier) operands.get(1)).setName(0, getMatViewColumnAlias(matViewColumns.get(i)));
+                    expression.setOperand(1, newAlias);
+                } else {
+                    expression = buildAlias(expression, matViewColumns.get(i), expression.getParserPosition(), selectList.get(i).getParserPosition());
+                }
+            } else {
+                expression = buildAlias(current, matViewColumns.get(i), current.getParserPosition(), selectList.get(i).getParserPosition());
+            }
+            updatedSelectList.add(expression);
+        }
+
+        return updatedSelectList;
+    }
+
+    private SqlBasicCall buildAlias(SqlNode queryColumn, SqlNode matViewColumn, SqlParserPos aliasPos, SqlParserPos pos) {
+        return new SqlBasicCall(
+                new SqlAsOperator(),
+                new SqlNode[]{
+                        queryColumn,
+                        new SqlIdentifier(
+                                getMatViewColumnAlias(matViewColumn),
+                                aliasPos
+                        )
+                },
+                pos
+        );
+    }
+
+    private String getMatViewColumnAlias(SqlNode column) {
+        return ((SqlIdentifier) ((SqlColumnDeclaration) column).getOperandList().get(0)).getSimple();
     }
 
     private Future<Void> checkSystemColumnNames(SqlNode sqlNode) {

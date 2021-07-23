@@ -12,7 +12,8 @@ import org.apache.calcite.sql.parser.impl.SqlParserImpl;
 import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @Slf4j
 class SqlSelectTreeTest {
@@ -113,5 +114,4 @@ class SqlSelectTreeTest {
         assertEquals(38, selectTree.getNodeMap().size());
         assertEquals(4, selectTree.findAllTableAndSnapshots().size());
     }
-
 }

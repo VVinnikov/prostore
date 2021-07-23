@@ -10,12 +10,14 @@ import io.arenadata.dtm.query.execution.core.edml.mppw.service.impl.BreakMppwCon
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
+@Slf4j
 public class BreakMppwExecutor {
 
     private final DeltaServiceDao deltaServiceDao;
@@ -31,45 +33,44 @@ public class BreakMppwExecutor {
     }
 
     public Future<Void> breakMppw(String datamart) {
-        Promise<Void> promise = Promise.promise();
-
-        deltaServiceDao.getDeltaWriteOperations(datamart)
+        return deltaServiceDao.getDeltaWriteOperations(datamart)
                 .map(ops -> ops.stream().filter(op -> op.getStatus() == WriteOperationStatus.EXECUTING.getValue()).collect(Collectors.toList()))
                 .compose(ops -> sendBreakMppwEvent(datamart, ops))
-                .compose(ar -> waitUntilDone(datamart, promise));
-
-        return promise.future();
+                .compose(ar -> waitUntilDone(datamart));
     }
 
     private Future<Void> sendBreakMppwEvent(String datamart, List<DeltaWriteOp> ops) {
         return Future.future(promise -> {
             ops.forEach(op -> {
                 BreakMppwContext.requestRollback(datamart, op.getSysCn(), MppwStopReason.BREAK_MPPW_RECEIVED);
+                log.debug("Stop MPPW task for [{}, {}] sent", datamart, op.getSysCn());
             });
             promise.complete();
         });
     }
 
-    private Future<Void> waitUntilDone(String datamart, Promise<Void> promise) {
-        if (BreakMppwContext.getNumberOfTasksByDatamart(datamart) == 0) {
-            promise.complete();
-            return Future.succeededFuture();
-        }
+    private Future<Void> waitUntilDone(String datamart) {
+        return Future.future(promise -> {
+            if (BreakMppwContext.getNumberOfTasksByDatamart(datamart) == 0) {
+                promise.complete();
+                return;
+            }
 
-        periodicallyCheckTasks(datamart, promise);
-        return promise.future();
+            periodicallyCheckTasks(datamart, promise);
+        });
     }
 
-    private Future<Void> periodicallyCheckTasks(String datamart, Promise<Void> promise) {
+    private void periodicallyCheckTasks(String datamart, Promise<Void> promise) {
         vertx.setTimer(rollbackStatusCallsMs, timerId -> {
-            if (BreakMppwContext.getNumberOfTasksByDatamart(datamart) == 0) {
+            long count = BreakMppwContext.getNumberOfTasksByDatamart(datamart);
+            log.debug("Break MPPW: Currently running {} tasks for datamart {}", count, datamart);
+            if (count == 0) {
                 vertx.cancelTimer(timerId);
                 promise.complete();
             } else {
                 periodicallyCheckTasks(datamart, promise);
             }
         });
-        return promise.future();
     }
 
 }

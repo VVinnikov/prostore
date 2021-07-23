@@ -6,6 +6,7 @@ import io.arenadata.dtm.common.metrics.RequestMetrics;
 import io.arenadata.dtm.common.model.RequestStatus;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.reader.QueryRequest;
+import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.common.request.DatamartRequest;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
 import io.arenadata.dtm.query.execution.core.base.repository.ServiceDbFacade;
@@ -137,11 +138,9 @@ public class RestoreStateServiceImpl implements RestoreStateService {
 
     }
 
-    private Future<Void> uploadWriteOperation(Entity dest, Entity source, DeltaWriteOp op) {
+    private Future<QueryResult> uploadWriteOperation(Entity dest, Entity source, DeltaWriteOp op) {
         EdmlRequestContext context = createEdmlRequestContext(dest, source, op);
-        return Future.future(promise -> uploadExternalTableExecutor.execute(context)
-                .onSuccess(success -> promise.complete())
-                .onFailure(promise::fail));
+        return uploadExternalTableExecutor.execute(context);
     }
 
     private EdmlRequestContext createEdmlRequestContext(Entity dest, Entity source, DeltaWriteOp op) {

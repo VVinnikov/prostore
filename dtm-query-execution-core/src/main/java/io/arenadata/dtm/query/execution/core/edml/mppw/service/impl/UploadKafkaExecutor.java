@@ -180,7 +180,9 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
             if (BreakMppwContext.rollbackRequested(
                     mppwRequestWrapper.getRequest().getDatamartMnemonic(),
                     mppwRequestWrapper.getRequest().getSysCn())) {
-                log.info("Got BREAK_MPPW task for request [{}]", mppwRequestWrapper.getRequest().getRequestId());
+                log.info("Plugin {} got BREAK_MPPW task for request [{}]",
+                        mppwRequestWrapper.getSourceType(),
+                        mppwRequestWrapper.getRequest().getRequestId());
                 vertx.cancelTimer(timerId);
 
                 MppwStopReason reason = BreakMppwContext.getReason(

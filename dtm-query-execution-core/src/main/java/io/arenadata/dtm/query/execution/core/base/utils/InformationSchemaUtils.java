@@ -34,10 +34,22 @@ public class InformationSchemaUtils {
             "WHERE schema_name NOT IN ('DTM', 'INFORMATION_SCHEMA', 'SYSTEM_LOBS')";
 
     public static final String LOGIC_SCHEMA_ENTITIES =
-        "CREATE VIEW IF NOT EXISTS DTM.logic_schema_entities AS \n" +
-            "SELECT table_catalog, table_schema, table_name, table_type\n" +
-            "FROM information_schema.tables \n" +
-            "WHERE table_schema NOT IN ('DTM', 'INFORMATION_SCHEMА', 'SYSTEM_LOBS')";
+        "CREATE VIEW IF NOT EXISTS DTM.logic_schema_entities AS\n" +
+                "SELECT table_catalog, \n" +
+                "       table_schema, \n" +
+                "       table_name, \n" +
+                "       table_type, \n" +
+                "       case \n" +
+                "           when com.comment is not NULL then comment\n" +
+                "           else '' end \n" +
+                "           as table_datasource_type\n" +
+                "FROM information_schema.tables t\n" +
+                "         left outer join information_schema.system_comments com\n" +
+                "                         on t.TABLE_CATALOG = com.OBJECT_CATALOG\n" +
+                "                             and t.TABLE_SCHEMA = com.OBJECT_SCHEMA\n" +
+                "                             and t.TABLE_NAME = com.OBJECT_NAME\n" +
+                "                             and com.COLUMN_NAME IS NULL\n" +
+                "WHERE table_schema NOT IN ('DTM', 'INFORMATION_SCHEMA', 'SYSTEM_LOBS')";
 
     public static final String LOGIC_SCHEMA_COLUMNS =
         "CREATE VIEW IF NOT EXISTS DTM.logic_schema_columns AS\n" +
@@ -92,6 +104,7 @@ public class InformationSchemaUtils {
     public static final String CREATE_SHARDING_KEY_INDEX = "CREATE INDEX IF NOT EXISTS sk_%s on %s (%s)";
 
     public static final String COMMENT_ON_COLUMN = "COMMENT ON COLUMN %s.%s IS '%s'";
+    public static final String COMMENT_ON_TABLE = "COMMENT ON TABLE %s IS '%s'";
 
     public static final String DROP_VIEW = "DROP VIEW IF EXISTS %s.%s";
     public static final String DROP_TABLE = "DROP TABLE IF EXISTS %s.%s";

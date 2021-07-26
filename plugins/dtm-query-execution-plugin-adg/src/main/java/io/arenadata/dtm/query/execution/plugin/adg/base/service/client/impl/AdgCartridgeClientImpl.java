@@ -224,7 +224,7 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
 
     private Future<HttpResponse<Buffer>> executeDeleteRequest(String uri) {
         return Future.future(promise -> {
-            log.debug("send GET to [{}]", uri);
+            log.debug("send DELETE to [{}]", uri);
             webClient.deleteAbs(uri)
                     .send(promise);
         });
@@ -232,7 +232,7 @@ public class AdgCartridgeClientImpl implements AdgCartridgeClient {
 
     private Future<HttpResponse<Buffer>> executeDeleteRequest(String uri, Object request) {
         return Future.future(promise -> {
-            log.debug("send GET to [{}] request [{}]", uri, request);
+            log.debug("send DELETE to [{}] request [{}]", uri, request);
             webClient.deleteAbs(uri)
                     .sendJson(request, promise);
         });

@@ -83,9 +83,11 @@ public class UploadExternalTableExecutor implements EdmlExecutor {
                     }
                 })
                 .onComplete(f -> {
-                    BreakMppwContext.removeTask(
-                            context.getRequest().getQueryRequest().getDatamartMnemonic(),
-                            context.getSysCn());
+                    if (context.getSysCn() != null) {
+                        BreakMppwContext.removeTask(
+                                context.getRequest().getQueryRequest().getDatamartMnemonic(),
+                                context.getSysCn());
+                    }
                 })
                 .onSuccess(result -> promise.complete(QueryResult.emptyResult()))
                 .onFailure(promise::fail));

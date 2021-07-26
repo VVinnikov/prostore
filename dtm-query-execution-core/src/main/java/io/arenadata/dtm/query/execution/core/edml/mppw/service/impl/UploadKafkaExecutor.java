@@ -112,6 +112,7 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                             .request(kafkaRequest)
                             .topic(kafkaRequest.getTopic())
                             .build();
+
                     if (ar.succeeded()) {
                         log.debug("A request has been sent for the plugin: {} to start mppw download: {}", ds, kafkaRequest);
                         val mppwLoadStatusResult = MppwLoadStatusResult.builder()
@@ -119,17 +120,14 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                                 .lastOffset(0L)
                                 .build();
                         mppwRequestWrapper.setLoadStatusResult(mppwLoadStatusResult);
-                        sendStatusPeriodically(mppwRequestWrapper, promise);
                     } else {
-                        MppwStopFuture stopFuture = MppwStopFuture.builder()
-                                .sourceType(ds)
-                                .future(stopMppw(mppwRequestWrapper))
-                                .cause(new DtmException(String.format("Error starting loading mppw for plugin: %s", ds),
-                                        ar.cause()))
-                                .stopReason(MppwStopReason.ERROR_RECEIVED)
-                                .build();
-                        promise.complete(stopFuture);
+                        log.error("Error starting loading mppw for plugin: {}", ds);
+                        BreakMppwContext.requestRollback(kafkaRequest.getDatamartMnemonic(),
+                                kafkaRequest.getSysCn(),
+                                MppwStopReason.ERROR_RECEIVED);
                     }
+
+                    sendStatusPeriodically(mppwRequestWrapper, promise);
                 }));
     }
 

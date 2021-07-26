@@ -8,27 +8,26 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class BreakMppwContext {
 
-    private static final Map<BreakMppwRequest, MppwStopReason> breakReasons = new ConcurrentHashMap<>();
+    private static final Map<BreakMppwRequest, MppwStopReason> breakRequests = new ConcurrentHashMap<>();
 
     public static void requestRollback(String datamart, long sysCn, MppwStopReason reason) {
-        breakReasons.put(new BreakMppwRequest(datamart, sysCn), reason);
+        breakRequests.put(new BreakMppwRequest(datamart, sysCn), reason);
     }
 
     public static boolean rollbackRequested(String datamart, long sysCn) {
-        return breakReasons.containsKey(new BreakMppwRequest(datamart, sysCn));
+        return breakRequests.containsKey(new BreakMppwRequest(datamart, sysCn));
     }
 
     public static void removeTask(String datamart, long sysCn) {
-        BreakMppwRequest request = new BreakMppwRequest(datamart, sysCn);
-        breakReasons.remove(request);
+        breakRequests.remove(new BreakMppwRequest(datamart, sysCn));
     }
 
     public static MppwStopReason getReason(String datamart, long sysCn) {
-        return breakReasons.get(new BreakMppwRequest(datamart, sysCn));
+        return breakRequests.get(new BreakMppwRequest(datamart, sysCn));
     }
 
     public static long getNumberOfTasksByDatamart(String datamart) {
-        return breakReasons.keySet().stream().filter(task -> task.getDatamart().equals(datamart)).count();
+        return breakRequests.keySet().stream().filter(task -> task.getDatamart().equals(datamart)).count();
     }
 
 }

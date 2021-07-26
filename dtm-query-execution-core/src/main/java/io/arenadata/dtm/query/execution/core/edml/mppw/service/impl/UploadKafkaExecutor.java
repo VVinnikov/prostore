@@ -121,10 +121,10 @@ public class UploadKafkaExecutor implements EdmlUploadExecutor {
                                 .build();
                         mppwRequestWrapper.setLoadStatusResult(mppwLoadStatusResult);
                     } else {
-                        log.error("Error starting loading mppw for plugin: {}", ds);
+                        log.error("Error starting loading mppw for plugin: {}", ds, ar.cause());
                         BreakMppwContext.requestRollback(kafkaRequest.getDatamartMnemonic(),
                                 kafkaRequest.getSysCn(),
-                                MppwStopReason.ERROR_RECEIVED);
+                                MppwStopReason.UNABLE_TO_START);
                     }
 
                     sendStatusPeriodically(mppwRequestWrapper, promise);

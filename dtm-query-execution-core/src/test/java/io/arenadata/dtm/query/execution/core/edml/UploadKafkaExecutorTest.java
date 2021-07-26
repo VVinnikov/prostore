@@ -334,7 +334,7 @@ class UploadKafkaExecutorTest {
         assertThat(BreakMppwContext.getReason(
                 pluginRequest.getDatamartMnemonic(),
                 pluginRequest.getSysCn()))
-                .isEqualTo(MppwStopReason.ERROR_RECEIVED);
+                .isEqualTo(MppwStopReason.UNABLE_TO_START);
         assertThat(BreakMppwContext.getNumberOfTasksByDatamart(pluginRequest.getDatamartMnemonic())).isEqualTo(1);
         assertNotNull(resultException);
     }

@@ -20,6 +20,7 @@ import io.arenadata.dtm.query.execution.core.base.service.column.CheckColumnType
 import io.arenadata.dtm.query.execution.core.base.service.column.CheckColumnTypesServiceImpl;
 import io.arenadata.dtm.query.execution.core.edml.configuration.EdmlProperties;
 import io.arenadata.dtm.query.execution.core.edml.dto.EdmlRequestContext;
+import io.arenadata.dtm.query.execution.core.edml.mppw.dto.MppwStopReason;
 import io.arenadata.dtm.query.execution.core.edml.mppw.factory.MppwKafkaRequestFactory;
 import io.arenadata.dtm.query.execution.core.edml.mppw.factory.impl.MppwErrorMessageFactoryImpl;
 import io.arenadata.dtm.query.execution.core.edml.mppw.factory.impl.MppwKafkaRequestFactoryImpl;
@@ -57,6 +58,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.LongStream;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -83,7 +85,7 @@ class UploadKafkaExecutorTest {
     private Set<SourceType> sourceTypes;
     private QueryRequest queryRequest;
     private QueryResult queryResult;
-    private Object resultException;
+    private Throwable resultException;
     private final MppwKafkaRequest pluginRequest = MppwKafkaRequest.builder()
             .requestId(UUID.fromString("6efad624-b9da-4ba1-9fed-f2da478b08e8"))
             .envName("env")
@@ -188,6 +190,81 @@ class UploadKafkaExecutorTest {
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
         assertNotNull(queryResult);
+        assertThat(BreakMppwContext.getNumberOfTasksByDatamart(pluginRequest.getDatamartMnemonic())).isEqualTo(0);
+    }
+
+    @Test
+    void testBreakMppwTaskStopsExecution() {
+        TestSuite suite = TestSuite.create("mppwLoadTest");
+        suite.test("executeMppwAllSuccess", context -> {
+            Async async = context.async();
+            Promise<QueryResult> promise = Promise.promise();
+            KafkaAdminProperty kafkaAdminProperty = new KafkaAdminProperty();
+            kafkaAdminProperty.setInputStreamTimeoutMs(inputStreamTimeoutMs);
+
+            EdmlRequestContext edmlRequestContext = createEdmlRequestContext();
+
+            final Queue<MppwKafkaRequest> mppwContextQueue = new BlockingArrayQueue<>();
+            mppwContextQueue.add(pluginRequest);
+            mppwContextQueue.add(pluginRequest);
+
+            final Queue<StatusQueryResult> adbStatusResultQueue = new BlockingArrayQueue<>();
+            final Queue<StatusQueryResult> adgStatusResultQueue = new BlockingArrayQueue<>();
+            initStatusResultQueue(adbStatusResultQueue, 15, 5);
+            initStatusResultQueue(adgStatusResultQueue, 15, 5);
+
+            when(pluginService.getSourceTypes()).thenReturn(sourceTypes);
+            when(edmlProperties.getPluginStatusCheckPeriodMs()).thenReturn(pluginStatusCheckPeriodMs);
+            when(edmlProperties.getFirstOffsetTimeoutMs()).thenReturn(firstOffsetTimeoutMs);
+            when(edmlProperties.getChangeOffsetTimeoutMs()).thenReturn(changeOffsetTimeoutMs);
+            when(kafkaProperties.getAdmin()).thenReturn(kafkaAdminProperty);
+            when(mppwKafkaRequestFactory.create(edmlRequestContext))
+                    .thenReturn(Future.succeededFuture(mppwContextQueue.poll()));
+            when(pluginService.mppw(eq(SourceType.ADB), any(), eq(pluginRequest)))
+                    .thenReturn(Future.succeededFuture());
+            when(pluginService.mppw(eq(SourceType.ADG), any(), eq(pluginRequest)))
+                    .thenReturn(Future.succeededFuture());
+
+            Mockito.doAnswer(invocation -> {
+                final SourceType ds = invocation.getArgument(0);
+                if (ds.equals(SourceType.ADB)) {
+                    return Future.succeededFuture(adbStatusResultQueue.poll());
+                } else if (ds.equals(SourceType.ADG)) {
+                    return Future.succeededFuture(adgStatusResultQueue.poll());
+                }
+                return null;
+            }).when(pluginService).status(any(), any(), any());
+
+            Mockito.doAnswer(invocation -> {
+                final SourceType ds = invocation.getArgument(0);
+                if (ds.equals(SourceType.ADB)) {
+                    return Future.succeededFuture(new QueryResult());
+                } else if (ds.equals(SourceType.ADG)) {
+                    return Future.succeededFuture(new QueryResult());
+                }
+                return null;
+            }).when(pluginService).mppw(any(), any(), any());
+
+            BreakMppwContext.requestRollback(pluginRequest.getDatamartMnemonic(),
+                    pluginRequest.getSysCn(),
+                    MppwStopReason.BREAK_MPPW_RECEIVED);
+            uploadKafkaExecutor.execute(edmlRequestContext)
+                    .onComplete(ar -> {
+                        if (ar.failed()) {
+                            resultException = ar.cause();
+                            promise.complete();
+                            async.complete();
+                        } else {
+                            promise.fail("Should have been stopped mppw");
+                        }
+                    });
+            async.awaitSuccess();
+            queryResult = promise.future().result();
+        });
+        suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
+
+        assertNotNull(resultException);
+        assertThat(resultException.getMessage()).contains(MppwStopReason.BREAK_MPPW_RECEIVED.toString());
     }
 
     @Test
@@ -228,7 +305,7 @@ class UploadKafkaExecutorTest {
 
             Mockito.doAnswer(invocation -> {
                 final SourceType ds = invocation.getArgument(0);
-                final MppwRequest requestContext = invocation.getArgument(1);
+                final MppwRequest requestContext = invocation.getArgument(2);
                 if (ds.equals(SourceType.ADB) && requestContext.getIsLoadStart()) {
                     return Future.failedFuture(new DtmException("Start mppw error"));
                 } else if (ds.equals(SourceType.ADB) && !requestContext.getIsLoadStart()) {
@@ -253,6 +330,12 @@ class UploadKafkaExecutorTest {
             queryResult = (QueryResult) promise.future().result();
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
+
+        assertThat(BreakMppwContext.getReason(
+                pluginRequest.getDatamartMnemonic(),
+                pluginRequest.getSysCn()))
+                .isEqualTo(MppwStopReason.UNABLE_TO_START);
+        assertThat(BreakMppwContext.getNumberOfTasksByDatamart(pluginRequest.getDatamartMnemonic())).isEqualTo(1);
         assertNotNull(resultException);
     }
 
@@ -373,6 +456,12 @@ class UploadKafkaExecutorTest {
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
         assertNotNull(resultException);
+
+        assertThat(BreakMppwContext.getReason(
+                pluginRequest.getDatamartMnemonic(),
+                pluginRequest.getSysCn()))
+                .isEqualTo(MppwStopReason.TIMEOUT_RECEIVED);
+        assertThat(BreakMppwContext.getNumberOfTasksByDatamart(pluginRequest.getDatamartMnemonic())).isEqualTo(1);
     }
 
     @Test
@@ -439,6 +528,12 @@ class UploadKafkaExecutorTest {
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
         assertNotNull(resultException);
+
+        assertThat(BreakMppwContext.getReason(
+                pluginRequest.getDatamartMnemonic(),
+                pluginRequest.getSysCn()))
+                .isEqualTo(MppwStopReason.ERROR_RECEIVED);
+        assertThat(BreakMppwContext.getNumberOfTasksByDatamart(pluginRequest.getDatamartMnemonic())).isEqualTo(1);
     }
 
     @Test
@@ -505,6 +600,12 @@ class UploadKafkaExecutorTest {
         });
         suite.run(new TestOptions().addReporter(new ReportOptions().setTo("console")));
         assertNotNull(resultException);
+
+        assertThat(BreakMppwContext.getReason(
+                pluginRequest.getDatamartMnemonic(),
+                pluginRequest.getSysCn()))
+                .isEqualTo(MppwStopReason.ERROR_RECEIVED);
+        assertThat(BreakMppwContext.getNumberOfTasksByDatamart(pluginRequest.getDatamartMnemonic())).isEqualTo(1);
     }
 
     @NotNull

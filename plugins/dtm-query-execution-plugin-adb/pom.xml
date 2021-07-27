@@ -14,17 +14,12 @@
         <version>4.1.0</version>
     </parent>
 
-    <properties>
-        <dtm.common.version>${project.version}</dtm.common.version>
-        <dtm.plugin.api.version>${project.version}</dtm.plugin.api.version>
-    </properties>
-
     <dependencies>
         <!-- DTM-->
         <dependency>
             <groupId>io.arenadata.dtm</groupId>
             <artifactId>dtm-common</artifactId>
-            <version>${dtm.common.version}</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>io.arenadata.dtm</groupId>
@@ -40,7 +35,7 @@
         <dependency>
             <groupId>io.arenadata.dtm</groupId>
             <artifactId>dtm-query-execution-plugin-api</artifactId>
-            <version>${dtm.plugin.api.version}</version>
+            <version>${project.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>io.arenadata</groupId>

@@ -15,7 +15,7 @@ management:
 
 core:
   plugins:
-    active: ${CORE_PLUGINS_ACTIVE:ADG, ADB, ADQM}
+    active: ${CORE_PLUGINS_ACTIVE:ADG, ADB, ADQM, ADP}
     category:
       mapping:
         RELATIONAL: ${DTM_CORE_PLUGINS_RELATIONAL:ADB, ADQM, ADG}

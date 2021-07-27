@@ -13,7 +13,7 @@ public class InformationSchemaUtils {
                 "       sii.TABLE_SCHEM      as constraint_schema,\n" +
                 "       case\n" +
                 "           when sii.index_name like 'SYS_IDX_PK_%' then siu.constraint_name\n" +
-                "           else sii.index_name\n" +
+                "           else 'SK_' + sii.TABLE_SCHEM + '_' + sii.TABLE_NAME\n" +
                 "           end              as constraint_name,\n" +
                 "       sii.table_schem      as table_schema,\n" +
                 "       sii.table_name       as table_name,\n" +
@@ -81,7 +81,7 @@ public class InformationSchemaUtils {
                 "SELECT si.TABLE_CATALOG as constraint_catalog,\n" +
                 "       si.TABLE_SCHEMA as constraint_schema,\n" +
                 "       case when si.index_name like 'SYS_IDX_PK_%' then siu.constraint_name\n" +
-                "            else si.index_name\n" +
+                "            else 'SK_' + si.TABLE_SCHEMA + '_' + si.TABLE_NAME\n" +
                 "            end as constraint_name,\n" +
                 "       si.table_schema,\n" +
                 "       si.table_name,\n" +

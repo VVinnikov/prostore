@@ -39,8 +39,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 @ExtendWith({MockitoExtension.class, VertxExtension.class})
@@ -200,17 +202,13 @@ class PrepareQueriesOfChangesServiceImplTest {
             ctx.verify(() -> {
                 verify(queryEnrichmentService, times(2)).enrich(enrichQueryRequestArgumentCaptor.capture(), any());
                 verifyNoMoreInteractions(queryEnrichmentService);
-                List<EnrichQueryRequest> allValues = enrichQueryRequestArgumentCaptor.getAllValues();
 
-                // assert new query
-                EnrichQueryRequest firstRequest = allValues.get(0);
-                String firstQuery = firstRequest.getQuery().toSqlString(sqlDialect).toString();
-                assertThat(expectedNewQuery).isEqualToNormalizingNewlines(firstQuery);
+                List<String> allValues = enrichQueryRequestArgumentCaptor.getAllValues().stream()
+                        .map(enrichQueryRequest -> enrichQueryRequest.getQuery().toSqlString(sqlDialect).toString().replace("\r\n", "\n"))
+                        .collect(Collectors.toList());
 
-                // assert deleted query
-                EnrichQueryRequest secondRequest = allValues.get(1);
-                String secondQuery = secondRequest.getQuery().toSqlString(sqlDialect).toString();
-                assertThat(expectedDeletedQuery).isEqualToNormalizingNewlines(secondQuery);
+                assertThat(allValues).contains(expectedDeletedQuery);
+                assertThat(allValues).contains(expectedNewQuery);
 
                 // assert result
                 assertThat(expectedNewQuery).isEqualToNormalizingNewlines(queriesOfChanges.getNewRecordsQuery());
@@ -296,26 +294,15 @@ class PrepareQueriesOfChangesServiceImplTest {
             ctx.verify(() -> {
                 verify(queryEnrichmentService, times(4)).enrich(enrichQueryRequestArgumentCaptor.capture(), any());
                 verifyNoMoreInteractions(queryEnrichmentService);
-                List<EnrichQueryRequest> allValues = enrichQueryRequestArgumentCaptor.getAllValues();
 
-                // assert new fresh query
-                EnrichQueryRequest firstFreshRequest = allValues.get(0);
-                String firstFreshQuery = firstFreshRequest.getQuery().toSqlString(sqlDialect).toString();
-                assertThat(expectedNewFreshQuery).isEqualToNormalizingNewlines(firstFreshQuery);
-                // assert new stale query
-                EnrichQueryRequest firstStaleRequest = allValues.get(1);
-                String firstStaleQuery = firstStaleRequest.getQuery().toSqlString(sqlDialect).toString();
-                assertThat(expectedNewStaleQuery).isEqualToNormalizingNewlines(firstStaleQuery);
+                List<String> allValues = enrichQueryRequestArgumentCaptor.getAllValues().stream()
+                        .map(enrichQueryRequest -> enrichQueryRequest.getQuery().toSqlString(sqlDialect).toString().replace("\r\n", "\n"))
+                        .collect(Collectors.toList());
 
-                // assert deleted fresh query
-                EnrichQueryRequest secondStaleRequest = allValues.get(2);
-                String secondStaleQuery = secondStaleRequest.getQuery().toSqlString(sqlDialect).toString();
-                assertThat(expectedDeletedStaleQuery).isEqualToNormalizingNewlines(secondStaleQuery);
-
-                // assert deleted stale query
-                EnrichQueryRequest secondFreshRequest = allValues.get(3);
-                String secondFreshQuery = secondFreshRequest.getQuery().toSqlString(sqlDialect).toString();
-                assertThat(expectedDeletedFreshQuery).isEqualToNormalizingNewlines(secondFreshQuery);
+                assertThat(allValues).contains(expectedNewFreshQuery);
+                assertThat(allValues).contains(expectedNewStaleQuery);
+                assertThat(allValues).contains(expectedDeletedStaleQuery);
+                assertThat(allValues).contains(expectedDeletedFreshQuery);
 
                 assertThat(expectedNewFreshQuery + " EXCEPT " + expectedNewStaleQuery).isEqualToNormalizingNewlines(queriesOfChanges.getNewRecordsQuery());
                 assertThat(expectedDeletedStaleQuery + " EXCEPT " + expectedDeletedFreshQuery).isEqualToNormalizingNewlines(queriesOfChanges.getDeletedRecordsQuery());
@@ -367,26 +354,15 @@ class PrepareQueriesOfChangesServiceImplTest {
             ctx.verify(() -> {
                 verify(queryEnrichmentService, times(4)).enrich(enrichQueryRequestArgumentCaptor.capture(), any());
                 verifyNoMoreInteractions(queryEnrichmentService);
-                List<EnrichQueryRequest> allValues = enrichQueryRequestArgumentCaptor.getAllValues();
 
-                // assert new fresh query
-                EnrichQueryRequest firstFreshRequest = allValues.get(0);
-                String firstFreshQuery = firstFreshRequest.getQuery().toSqlString(sqlDialect).toString();
-                assertThat(expectedNewFreshQuery).isEqualToNormalizingNewlines(firstFreshQuery);
-                // assert new stale query
-                EnrichQueryRequest firstStaleRequest = allValues.get(1);
-                String firstStaleQuery = firstStaleRequest.getQuery().toSqlString(sqlDialect).toString();
-                assertThat(expectedNewStaleQuery).isEqualToNormalizingNewlines(firstStaleQuery);
+                List<String> allValues = enrichQueryRequestArgumentCaptor.getAllValues().stream()
+                        .map(enrichQueryRequest -> enrichQueryRequest.getQuery().toSqlString(sqlDialect).toString().replace("\r\n", "\n"))
+                        .collect(Collectors.toList());
 
-                // assert deleted fresh query
-                EnrichQueryRequest secondStaleRequest = allValues.get(2);
-                String secondStaleQuery = secondStaleRequest.getQuery().toSqlString(sqlDialect).toString();
-                assertThat(expectedDeletedStaleQuery).isEqualToNormalizingNewlines(secondStaleQuery);
-
-                // assert deleted stale query
-                EnrichQueryRequest secondFreshRequest = allValues.get(3);
-                String secondFreshQuery = secondFreshRequest.getQuery().toSqlString(sqlDialect).toString();
-                assertThat(expectedDeletedFreshQuery).isEqualToNormalizingNewlines(secondFreshQuery);
+                assertThat(allValues).contains(expectedNewFreshQuery);
+                assertThat(allValues).contains(expectedNewStaleQuery);
+                assertThat(allValues).contains(expectedDeletedStaleQuery);
+                assertThat(allValues).contains(expectedDeletedFreshQuery);
 
                 assertThat(expectedNewFreshQuery + " EXCEPT " + expectedNewStaleQuery).isEqualToNormalizingNewlines(queriesOfChanges.getNewRecordsQuery());
                 assertThat(expectedDeletedStaleQuery + " EXCEPT " + expectedDeletedFreshQuery).isEqualToNormalizingNewlines(queriesOfChanges.getDeletedRecordsQuery());
@@ -412,7 +388,7 @@ class PrepareQueriesOfChangesServiceImplTest {
             ctx.verify(() -> {
                 Throwable cause = event.cause();
                 Assertions.assertSame(DtmException.class, cause.getClass());
-                Assertions.assertTrue(cause.getMessage().contains("Object 'datamart2' not found"));
+                assertTrue(cause.getMessage().contains("Object 'datamart2' not found"));
             }).completeNow();
         });
     }
@@ -435,7 +411,7 @@ class PrepareQueriesOfChangesServiceImplTest {
             ctx.verify(() -> {
                 Throwable cause = event.cause();
                 Assertions.assertSame(DtmException.class, cause.getClass());
-                Assertions.assertTrue(cause.getMessage().contains("No tables in query"));
+                assertTrue(cause.getMessage().contains("No tables in query"));
             }).completeNow();
         });
     }

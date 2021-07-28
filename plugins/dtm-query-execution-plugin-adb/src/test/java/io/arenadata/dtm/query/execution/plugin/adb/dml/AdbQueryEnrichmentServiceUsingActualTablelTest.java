@@ -18,10 +18,10 @@ import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.AdbDmlQuer
 import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.AdbQueryEnrichmentService;
 import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.AdbQueryGenerator;
 import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.AdbSchemaExtender;
-import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.service.QueryExtendService;
 import io.arenadata.dtm.query.execution.plugin.adb.utils.TestUtils;
 import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.dto.EnrichQueryRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.service.QueryEnrichmentService;
+import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.service.QueryExtendService;
 import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.service.QueryGenerator;
 import io.vertx.core.Vertx;
 import io.vertx.junit5.VertxExtension;
@@ -37,7 +37,6 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
 
 @Slf4j
 @ExtendWith(VertxExtension.class)
@@ -56,8 +55,7 @@ class AdbQueryEnrichmentServiceUsingActualTablelTest {
             new AdbCalciteSchemaFactory(new AdbSchemaFactory()));
     private final QueryGenerator adbQueryGenerator = new AdbQueryGenerator(queryExtender, calciteConfiguration.adbSqlDialect());
     private final QueryParserService queryParserService = new AdbCalciteDMLQueryParserService(contextProvider, Vertx.vertx());
-    private final QueryEnrichmentService adbQueryEnrichmentService = new AdbQueryEnrichmentServiceImpl(
-            queryParserService,
+    private final QueryEnrichmentService adbQueryEnrichmentService = new AdbQueryEnrichmentService(
             adbQueryGenerator,
             contextProvider,
             new AdbSchemaExtender());

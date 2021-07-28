@@ -84,6 +84,7 @@
                     <archive>
                         <manifest>
                             <mainClass>io.arenadata.dtm.jdbc.DtmDriver</mainClass>
+                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
                         </manifest>
                     </archive>
                 </configuration>

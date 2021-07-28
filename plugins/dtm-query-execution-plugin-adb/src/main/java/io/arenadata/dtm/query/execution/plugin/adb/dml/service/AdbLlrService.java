@@ -55,6 +55,10 @@ public class AdbLlrService extends QueryResultCacheableLlrService {
     }
 
     @Override
+    protected void validateQuery(QueryParserResponse parserResponse) {
+    }
+
+    @Override
     protected Future<String> enrichQuery(LlrRequest request, QueryParserResponse parserResponse) {
         return queryEnrichmentService.enrich(EnrichQueryRequest.builder()
                         .deltaInformations(request.getDeltaInformations())

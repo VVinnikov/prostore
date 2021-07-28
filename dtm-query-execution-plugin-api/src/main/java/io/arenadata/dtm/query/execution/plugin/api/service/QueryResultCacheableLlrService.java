@@ -107,8 +107,7 @@ public abstract class QueryResultCacheableLlrService implements LlrService<Query
 
     protected abstract Future<String> enrichQuery(LlrRequest llrRequest, QueryParserResponse parserResponse);
 
-    protected void validateQuery(QueryParserResponse parserResponse) {
-    }
+    protected abstract void validateQuery(QueryParserResponse parserResponse);
 
     private QueryTemplateValue getQueryTemplateValueFromCache(LlrRequest llrRq) {
         return queryCacheService.get(getQueryTemplateKey(llrRq));

@@ -13,13 +13,13 @@ management:
 
 core:
   plugins:
-    active: ${CORE_PLUGINS_ACTIVE:ADG, ADB, ADQM}
+    active: ${CORE_PLUGINS_ACTIVE:ADG, ADB, ADQM, ADP}
     category:
       mapping:
         RELATIONAL: ${DTM_CORE_PLUGINS_RELATIONAL:ADB, ADQM, ADG}
         ANALYTICAL: ${DTM_CORE_PLUGINS_ANALYTICAL:ADQM, ADB, ADG}
         DICTIONARY: ${DTM_CORE_PLUGINS_DICTIONARY:ADG, ADB, ADQM}
-        UNDEFINED: ${DTM_CORE_PLUGINS_UNDEFINED:ADB, ADQM, ADG}
+        UNDEFINED:  ${DTM_CORE_PLUGINS_UNDEFINED:ADB, ADQM, ADG}
 
   http:
     port: ${DTM_CORE_HTTP_PORT:9090}
@@ -86,15 +86,21 @@ core:
     maximumSize: ${CACHE_MAXIMUM_SIZE:100000}
     expireAfterAccessMinutes: ${CACHE_EXPIRE_AFTER_ACCESS_MINUTES:99960}
 
+  delta:
+    rollback-status-calls-ms: ${DELTA_ROLLBACK_STATUS_CALLS_MS:2000}
+
 adb:
   datasource:
     user: ${ADB_USERNAME:dtm}
     password: ${ADB_PASS:dtm}
     host: ${ADB_HOST:10.92.3.105}
     port: ${ADB_PORT:5432}
-    poolSize: ${ADB_MAX_POOL_SIZE:5}
-    executorsCount: ${ADB_EXECUTORS_COUNT:20}
+    poolSize: ${ADB_MAX_POOL_SIZE:3}
+    executorsCount: ${ADB_EXECUTORS_COUNT:3}
     fetchSize: ${ADB_FETCH_SIZE:1000}
+    preparedStatementsCacheMaxSize: ${ADB_PREPARED_CACHE_MAX_SIZE:256}
+    preparedStatementsCacheSqlLimit: ${ADB_PREPARED_CACHE_SQL_LIMIT:2048}
+    preparedStatementsCache: ${ADB_PREPARED_CACHE:true}
 
   mppw:
     consumerGroup: ${ADB_LOAD_GROUP:adb-emulator-load-adb}

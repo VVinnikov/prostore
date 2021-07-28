@@ -1,7 +1,6 @@
 package io.arenadata.dtm.query.execution.core.dml.service.view;
 
 import io.arenadata.dtm.common.exception.DeltaRangeInvalidException;
-import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.query.calcite.core.service.DefinitionService;
 import io.arenadata.dtm.query.calcite.core.util.CalciteUtil;

@@ -334,11 +334,11 @@ class RestoreStateServiceImplTest {
     }
 
     @Test
-    void restoreEraseWriteOpsNullSuccess() {
+    void restoreEraseWriteOpsEmptyListSuccess() {
         Promise<List<EraseWriteOpResult>> promise = Promise.promise();
         String datamart = "test";
 
-        when(deltaServiceDao.getDeltaWriteOperations(datamart)).thenReturn(Future.succeededFuture(null));
+        when(deltaServiceDao.getDeltaWriteOperations(datamart)).thenReturn(Future.succeededFuture(Collections.emptyList()));
 
         doAnswer(invocation -> {
             final String schema = invocation.getArgument(0);
@@ -442,11 +442,11 @@ class RestoreStateServiceImplTest {
     }
 
     @Test
-    void restoreUploadWriteOpsNullSuccess() {
+    void restoreUploadWriteOpsEmptyListSuccess() {
         Promise<Void> promise = Promise.promise();
         String datamart = "test";
 
-        when(deltaServiceDao.getDeltaWriteOperations(datamart)).thenReturn(Future.succeededFuture(null));
+        when(deltaServiceDao.getDeltaWriteOperations(datamart)).thenReturn(Future.succeededFuture(Collections.emptyList()));
 
         doAnswer(invocation -> {
             final String schema = invocation.getArgument(0);

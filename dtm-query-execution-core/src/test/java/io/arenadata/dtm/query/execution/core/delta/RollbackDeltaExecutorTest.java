@@ -5,11 +5,8 @@ import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.reader.QueryRequest;
 import io.arenadata.dtm.common.reader.QueryResult;
-import io.arenadata.dtm.query.execution.core.base.configuration.properties.RollbackDeltaProperties;
 import io.arenadata.dtm.query.execution.core.base.repository.ServiceDbFacade;
 import io.arenadata.dtm.query.execution.core.base.repository.ServiceDbFacadeImpl;
-import io.arenadata.dtm.query.execution.core.delta.repository.zookeeper.DeltaServiceDao;
-import io.arenadata.dtm.query.execution.core.delta.repository.zookeeper.impl.DeltaServiceDaoImpl;
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.EntityDao;
 import io.arenadata.dtm.query.execution.core.base.repository.zookeeper.ServiceDbDao;
 import io.arenadata.dtm.query.execution.core.delta.dto.DeltaRecord;
@@ -17,10 +14,12 @@ import io.arenadata.dtm.query.execution.core.delta.dto.HotDelta;
 import io.arenadata.dtm.query.execution.core.delta.dto.query.RollbackDeltaQuery;
 import io.arenadata.dtm.query.execution.core.delta.factory.DeltaQueryResultFactory;
 import io.arenadata.dtm.query.execution.core.delta.factory.impl.CommitDeltaQueryResultFactory;
+import io.arenadata.dtm.query.execution.core.delta.repository.zookeeper.DeltaServiceDao;
+import io.arenadata.dtm.query.execution.core.delta.repository.zookeeper.impl.DeltaServiceDaoImpl;
 import io.arenadata.dtm.query.execution.core.delta.service.impl.BreakMppwExecutor;
 import io.arenadata.dtm.query.execution.core.delta.service.impl.RollbackDeltaExecutor;
-import io.arenadata.dtm.query.execution.core.edml.mppw.service.EdmlUploadFailedExecutor;
 import io.arenadata.dtm.query.execution.core.delta.utils.DeltaQueryUtil;
+import io.arenadata.dtm.query.execution.core.edml.mppw.service.EdmlUploadFailedExecutor;
 import io.arenadata.dtm.query.execution.core.rollback.service.RestoreStateService;
 import io.arenadata.dtm.query.execution.core.utils.QueryResultUtils;
 import io.vertx.core.Future;
@@ -40,8 +39,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class RollbackDeltaExecutorTest {
     private final ServiceDbFacade serviceDbFacade = mock(ServiceDbFacadeImpl.class);
@@ -53,7 +55,7 @@ class RollbackDeltaExecutorTest {
     private final EvictQueryTemplateCacheServiceImpl evictQueryTemplateCacheService =
             mock(EvictQueryTemplateCacheServiceImpl.class);
     private final RestoreStateService restoreStateService = mock(RestoreStateService.class);
-    private BreakMppwExecutor breakMppwExecutor;
+    private BreakMppwExecutor breakMppwExecutor = mock(BreakMppwExecutor.class);
     private RollbackDeltaExecutor rollbackDeltaExecutor;
     private final QueryRequest req = new QueryRequest();
     private final DeltaRecord delta = new DeltaRecord();
@@ -74,7 +76,6 @@ class RollbackDeltaExecutorTest {
         when(serviceDbDao.getEntityDao()).thenReturn(entityDao);
         when(serviceDbFacade.getServiceDbDao()).thenReturn(serviceDbDao);
         when(edmlUploadFailedExecutor.eraseWriteOp(any())).thenReturn(Future.succeededFuture());
-        breakMppwExecutor = new BreakMppwExecutor(serviceDbFacade, new RollbackDeltaProperties(), Vertx.vertx());
         rollbackDeltaExecutor = new RollbackDeltaExecutor(edmlUploadFailedExecutor, serviceDbFacade,
                 deltaQueryResultFactory, Vertx.vertx(), evictQueryTemplateCacheService, restoreStateService, breakMppwExecutor);
         when(deltaServiceDao.writeDeltaError(eq(datamart), eq(null)))
@@ -82,6 +83,7 @@ class RollbackDeltaExecutorTest {
         when(deltaServiceDao.deleteDeltaHot(datamart))
                 .thenReturn(Future.succeededFuture());
         when(restoreStateService.restoreErase(datamart)).thenReturn(Future.succeededFuture(Collections.emptyList()));
+        when(breakMppwExecutor.breakMppw(datamart)).thenReturn(Future.succeededFuture());
         when(deltaServiceDao.getDeltaWriteOperations(datamart)).thenReturn(Future.succeededFuture(Collections.emptyList()));
         doNothing().when(evictQueryTemplateCacheService).evictByDatamartName(anyString());
     }
@@ -113,6 +115,8 @@ class RollbackDeltaExecutorTest {
         assertEquals(deltaDate, ((QueryResult) promise.future().result()).getResult()
                 .get(0).get(DeltaQueryUtil.DATE_TIME_FIELD));
         verifyEvictCacheExecuted();
+        verify(restoreStateService).restoreErase(datamart);
+        verify(breakMppwExecutor).breakMppw(datamart);
     }
 
     @Test

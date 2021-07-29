@@ -1,1 +1,0 @@
-databaseChangeLog:  - include:      file: db/changelog/serviceDb/release_2.5/release_2.5.0.yml

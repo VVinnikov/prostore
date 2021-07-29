@@ -8,6 +8,7 @@ import lombok.Getter;
 public class AdpTables<T> {
 
     private final T actual;
+    private final T history;
     private final T staging;
 
 }

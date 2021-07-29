@@ -15,6 +15,5 @@ public class AdpTableEntity {
     private String schema;
     private List<AdpTableColumn> columns;
     private List<String> primaryKeys;
-    private List<String> shardingKeys;
 
 }

@@ -24,15 +24,7 @@ public class CreateSchemaExecutor implements DdlExecutor<Void> {
 
     @Override
     public Future<Void> execute(DdlRequest request) {
-        return createQuerySql(request)
-                .compose(queryExecutor::executeUpdate);
-    }
-
-    private Future<String> createQuerySql(DdlRequest request) {
-        return Future.future(promise -> {
-            String datamartMnemonic = request.getDatamartMnemonic();
-            promise.complete(sqlFactory.createSchemaSqlQuery(datamartMnemonic));
-        });
+        return queryExecutor.executeUpdate(sqlFactory.createSchemaSqlQuery(request.getDatamartMnemonic()));
     }
 
     @Override

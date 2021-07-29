@@ -21,10 +21,9 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
     private final DropTableExecutor dropTableExecutor;
     private final CreateTableQueriesFactory<AdpTables<String>> createTableQueriesFactory;
 
-    @Autowired
-    public CreateTableExecutor(@Qualifier("AdpQueryExecutor") DatabaseExecutor AdpQueryExecutor,
-                               DropTableExecutor dropTableExecutor,
-                               CreateTableQueriesFactory<AdpTables<String>> createTableQueriesFactory) {
+    public CreateTableExecutor(@Qualifier("adpQueryExecutor") DatabaseExecutor AdpQueryExecutor,
+                               @Qualifier("adpDropTableExecutor") DropTableExecutor dropTableExecutor,
+                               @Qualifier("adpCreateTableQueriesFactory") CreateTableQueriesFactory<AdpTables<String>> createTableQueriesFactory) {
         this.AdpQueryExecutor = AdpQueryExecutor;
         this.sqlFactory = new SchemaSqlFactory();
         this.dropTableExecutor = dropTableExecutor;

@@ -37,19 +37,20 @@ public class AdpQueryExecutorTaskVerticle extends AbstractVerticle {
 
     @Override
     public void start() throws Exception {
-        PgConnectOptions pgConnectOptions = new PgConnectOptions();
-        pgConnectOptions.setDatabase(database);
-        pgConnectOptions.setHost(adpProperties.getHost());
-        pgConnectOptions.setPort(adpProperties.getPort());
-        pgConnectOptions.setUser(adpProperties.getUser());
-        pgConnectOptions.setPassword(adpProperties.getPassword());
-        pgConnectOptions.setPreparedStatementCacheMaxSize(adpProperties.getPreparedStatementsCacheMaxSize());
-        pgConnectOptions.setPreparedStatementCacheSqlLimit(adpProperties.getPreparedStatementsCacheSqlLimit());
-        pgConnectOptions.setCachePreparedStatements(adpProperties.isPreparedStatementsCache());
-        pgConnectOptions.setPipeliningLimit(1);
-        PoolOptions poolOptions = new PoolOptions();
-        poolOptions.setMaxSize(adpProperties.getPoolSize());
+        PgConnectOptions pgConnectOptions = new PgConnectOptions()
+                .setDatabase(database)
+                .setHost(adpProperties.getHost())
+                .setPort(adpProperties.getPort())
+                .setUser(adpProperties.getUser())
+                .setPassword(adpProperties.getPassword())
+                .setPreparedStatementCacheMaxSize(adpProperties.getPreparedStatementsCacheMaxSize())
+                .setPreparedStatementCacheSqlLimit(adpProperties.getPreparedStatementsCacheSqlLimit())
+                .setCachePreparedStatements(adpProperties.isPreparedStatementsCache())
+                .setPipeliningLimit(1);
+
+        PoolOptions poolOptions = new PoolOptions().setMaxSize(adpProperties.getPoolSize());
         PgPool pool = PgPool.pool(vertx, pgConnectOptions, poolOptions);
+
         adpQueryExecutor = new AdpQueryExecutor(pool, adpProperties.getFetchSize(), fromSqlConverter, toSqlConverter);
 
         vertx.eventBus().consumer(AdpExecutorTopic.EXECUTE.getTopic(), this::executeHandler);

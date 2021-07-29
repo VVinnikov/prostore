@@ -74,9 +74,6 @@ public class AdpTableEntitiesFactory implements TableEntitiesFactory<AdpTables<A
                 .collect(Collectors.toList());
         columns.addAll(SYSTEM_COLUMNS);
         AdpTableEntity.setColumns(columns);
-        AdpTableEntity.setShardingKeys(EntityFieldUtils.getShardingKeyList(entityFields).stream()
-                .map(EntityField::getName)
-                .collect(Collectors.toList()));
         return AdpTableEntity;
     }
 

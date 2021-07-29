@@ -12,8 +12,8 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Component
-public class AdpCreateTableQueriesFactory implements CreateTableQueriesFactory<AdpTables> {
+@Component("adpCreateTableQueriesFactory")
+public class AdpCreateTableQueriesFactory implements CreateTableQueriesFactory<AdpTables<String>> {
 
     public static final String CREATE_PATTERN = "CREATE TABLE %s.%s (%s%s)";
     public static final String PRIMARY_KEY_PATTERN = ", constraint pk_%s primary key (%s)";

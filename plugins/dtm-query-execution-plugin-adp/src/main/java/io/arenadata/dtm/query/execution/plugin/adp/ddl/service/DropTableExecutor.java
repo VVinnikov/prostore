@@ -11,7 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-@Component
+@Component("adpDropTableExecutor")
 public class DropTableExecutor implements DdlExecutor<Void> {
 
     private final DatabaseExecutor queryExecutor;

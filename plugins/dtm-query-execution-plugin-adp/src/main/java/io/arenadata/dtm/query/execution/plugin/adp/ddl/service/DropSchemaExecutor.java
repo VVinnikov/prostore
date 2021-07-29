@@ -25,15 +25,7 @@ public class DropSchemaExecutor implements DdlExecutor<Void> {
 
     @Override
     public Future<Void> execute(DdlRequest request) {
-        return createDropQuery(request.getDatamartMnemonic())
-                .compose(queryExecutor::executeUpdate);
-    }
-
-    private Future<String> createDropQuery(String datamartMnemonic) {
-        return Future.future(promise -> {
-            String dropSchemaSqlQuery = sqlFactory.dropSchemaSqlQuery(datamartMnemonic);
-            promise.complete(dropSchemaSqlQuery);
-        });
+        return queryExecutor.executeUpdate(sqlFactory.dropSchemaSqlQuery(request.getDatamartMnemonic()));
     }
 
     @Override

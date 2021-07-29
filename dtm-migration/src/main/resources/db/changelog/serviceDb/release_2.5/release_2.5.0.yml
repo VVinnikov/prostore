@@ -1,8 +1,0 @@
-databaseChangeLog:
-  - changeSet:
-      id:  20200819_140000
-      author: 'Vitkor Arkhipov'
-      changes:
-        - sqlFile:
-            path: 0001.sql
-            relativeToChangelogFile:  true

@@ -38,6 +38,11 @@
             <artifactId>dtm-calcite-core</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.arenadata.dtm</groupId>
+            <artifactId>dtm-kafka-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <!--Spring-->
         <dependency>
@@ -60,6 +65,11 @@
             <groupId>com.ongres.scram</groupId>
             <artifactId>client</artifactId>
             <version>2.1</version>
+        </dependency>
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-web-client</artifactId>
+            <version>${vertx.version}</version>
         </dependency>
 
         <!--Calcite-->

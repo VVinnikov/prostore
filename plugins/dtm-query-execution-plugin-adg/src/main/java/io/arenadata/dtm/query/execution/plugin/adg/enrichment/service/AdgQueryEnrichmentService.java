@@ -1,14 +1,13 @@
-package io.arenadata.dtm.query.execution.plugin.adg.enrichment.service.impl;
+package io.arenadata.dtm.query.execution.plugin.adg.enrichment.service;
 
-import io.arenadata.dtm.common.dto.QueryParserRequest;
 import io.arenadata.dtm.common.dto.QueryParserResponse;
 import io.arenadata.dtm.query.calcite.core.service.QueryParserService;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.arenadata.dtm.query.execution.plugin.adg.calcite.service.AdgCalciteContextProvider;
-import io.arenadata.dtm.query.execution.plugin.adg.enrichment.dto.EnrichQueryRequest;
-import io.arenadata.dtm.query.execution.plugin.adg.enrichment.service.QueryEnrichmentService;
-import io.arenadata.dtm.query.execution.plugin.adg.enrichment.service.QueryGenerator;
-import io.arenadata.dtm.query.execution.plugin.adg.enrichment.service.SchemaExtender;
+import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.dto.EnrichQueryRequest;
+import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.service.QueryEnrichmentService;
+import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.service.QueryGenerator;
+import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.service.SchemaExtender;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,29 +17,26 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Service
+@Service("adgQueryEnrichmentService")
 @Slf4j
-public class AdgQueryEnrichmentServiceImpl implements QueryEnrichmentService {
+public class AdgQueryEnrichmentService implements QueryEnrichmentService {
     private final AdgCalciteContextProvider contextProvider;
-    private final QueryParserService queryParserService;
     private final QueryGenerator adgQueryGenerator;
     private final SchemaExtender schemaExtender;
 
     @Autowired
-    public AdgQueryEnrichmentServiceImpl(
-            @Qualifier("adgCalciteDMLQueryParserService") QueryParserService queryParserService,
+    public AdgQueryEnrichmentService(
             AdgCalciteContextProvider contextProvider,
-            @Qualifier("adgQueryGenerator") QueryGenerator adgQueryGenerator, SchemaExtender schemaExtender) {
+            @Qualifier("adgQueryGenerator") QueryGenerator adgQueryGenerator,
+            SchemaExtender adgSchemaExtender) {
         this.contextProvider = contextProvider;
-        this.queryParserService = queryParserService;
         this.adgQueryGenerator = adgQueryGenerator;
-        this.schemaExtender = schemaExtender;
+        this.schemaExtender = adgSchemaExtender;
     }
 
     @Override
-    public Future<String> enrich(EnrichQueryRequest request) {
-        return queryParserService.parse(new QueryParserRequest(request.getQuery(), request.getSchema()))
-                .compose(parsedQuery -> modifyQuery(parsedQuery, request));
+    public Future<String> enrich(EnrichQueryRequest request, QueryParserResponse parserResponse) {
+        return modifyQuery(parserResponse, request);
     }
 
     private Future<String> modifyQuery(QueryParserResponse parsedQuery,

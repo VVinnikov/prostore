@@ -1,16 +1,14 @@
-package io.arenadata.dtm.query.execution.plugin.adqm.enrichment.service.impl;
+package io.arenadata.dtm.query.execution.plugin.adqm.enrichment.service;
 
 import io.arenadata.dtm.common.calcite.CalciteContext;
 import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.query.calcite.core.node.SqlSelectTree;
-import io.arenadata.dtm.query.execution.plugin.adqm.enrichment.service.QueryExtendService;
-import io.arenadata.dtm.query.execution.plugin.adqm.enrichment.service.QueryGenerator;
 import io.arenadata.dtm.query.execution.plugin.adqm.calcite.service.rel2sql.AdqmNullNotCastableRelToSqlConverter;
-import io.arenadata.dtm.query.execution.plugin.adqm.enrichment.dto.EnrichQueryRequest;
-import io.arenadata.dtm.query.execution.plugin.adqm.enrichment.dto.QueryGeneratorContext;
-import io.arenadata.dtm.query.execution.plugin.adqm.query.dto.AdqmCheckJoinRequest;
-import io.arenadata.dtm.query.execution.plugin.adqm.query.service.AdqmQueryJoinConditionsCheckService;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
+import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.dto.EnrichQueryRequest;
+import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.dto.QueryGeneratorContext;
+import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.service.QueryExtendService;
+import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.service.QueryGenerator;
 import io.vertx.core.Future;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -27,18 +25,15 @@ import java.util.List;
 
 @Slf4j
 @Service("adqmQueryGenerator")
-public class AdqmQueryGeneratorImpl implements QueryGenerator {
+public class AdqmQueryGenerator implements QueryGenerator {
     public static final String ALIAS_PATTERN = ".*SELECT.OTHER(\\[\\d+\\]|)(.AS(\\[\\d+\\]|)|).IDENTIFIER";
     private final QueryExtendService queryExtendService;
     private final SqlDialect sqlDialect;
-    private final AdqmQueryJoinConditionsCheckService joinConditionsCheckService;
 
-    public AdqmQueryGeneratorImpl(@Qualifier("adqmDmlQueryExtendService") QueryExtendService queryExtendService,
-                                  @Qualifier("adqmSqlDialect") SqlDialect sqlDialect,
-                                  AdqmQueryJoinConditionsCheckService joinConditionsCheckService) {
+    public AdqmQueryGenerator(@Qualifier("adqmDmlQueryExtendService") QueryExtendService queryExtendService,
+                              @Qualifier("adqmSqlDialect") SqlDialect sqlDialect) {
         this.queryExtendService = queryExtendService;
         this.sqlDialect = sqlDialect;
-        this.joinConditionsCheckService = joinConditionsCheckService;
     }
 
     @Override
@@ -52,11 +47,6 @@ public class AdqmQueryGeneratorImpl implements QueryGenerator {
                     calciteContext,
                     enrichQueryRequest);
 
-            if (!joinConditionsCheckService.isJoinConditionsCorrect(
-                    new AdqmCheckJoinRequest(generatorContext.getRelNode().rel,
-                            generatorContext.getEnrichQueryRequest().getSchema()))) {
-                promise.fail(new DataSourceException("Clickhouse’s global join is restricted"));
-            }
             try {
                 var extendedQuery = queryExtendService.extendQuery(generatorContext);
                 val sqlNodeResult = new AdqmNullNotCastableRelToSqlConverter(sqlDialect)

@@ -1,10 +1,10 @@
-package io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.impl;
+package io.arenadata.dtm.query.execution.plugin.adb.enrichment.service;
 
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
-import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.SchemaExtender;
+import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.service.SchemaExtender;
 import lombok.val;
 import org.springframework.stereotype.Service;
 
@@ -18,14 +18,14 @@ import static io.arenadata.dtm.query.execution.plugin.adb.base.factory.Constants
  * Implementing a Logic to Physical Conversion
  */
 @Service("adbSchemaExtender")
-public class AdbSchemaExtenderImpl implements SchemaExtender {
+public class AdbSchemaExtender implements SchemaExtender {
 
     @Override
-    public Datamart createPhysicalSchema(Datamart schema) {
+    public Datamart createPhysicalSchema(Datamart logicalSchema, String systemName) {
         Datamart extendedSchema = new Datamart();
-        extendedSchema.setMnemonic(schema.getMnemonic());
+        extendedSchema.setMnemonic(logicalSchema.getMnemonic());
         List<Entity> extendedEntities = new ArrayList<>();
-        schema.getEntities().forEach(entity -> {
+        logicalSchema.getEntities().forEach(entity -> {
             Entity extendedEntity = entity.copy();
             val extendedEntityFields = new ArrayList<>(extendedEntity.getFields());
             extendedEntityFields.addAll(getExtendedColumns());
@@ -63,7 +63,5 @@ public class AdbSchemaExtenderImpl implements SchemaExtender {
                 .nullable(isNullable)
                 .build();
     }
-
-
 
 }

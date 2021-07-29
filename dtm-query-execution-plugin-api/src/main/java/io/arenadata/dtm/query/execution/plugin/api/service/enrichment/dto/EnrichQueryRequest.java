@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.plugin.adb.enrichment.dto;
+package io.arenadata.dtm.query.execution.plugin.api.service.enrichment.dto;
 
 import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
@@ -19,4 +19,5 @@ public class EnrichQueryRequest {
     private List<Datamart> schema;
     private String envName;
     private SqlNode query;
+    private boolean isLocal;
 }

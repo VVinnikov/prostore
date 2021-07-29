@@ -1,14 +1,14 @@
-package io.arenadata.dtm.query.execution.plugin.adqm.enrichment.service.impl;
+package io.arenadata.dtm.query.execution.plugin.adqm.enrichment.service;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.query.execution.plugin.adqm.base.factory.AdqmHelperTableNamesFactory;
 import io.arenadata.dtm.query.execution.plugin.adqm.enrichment.dto.BuilderContext;
-import io.arenadata.dtm.query.execution.plugin.adqm.enrichment.dto.QueryGeneratorContext;
 import io.arenadata.dtm.query.execution.plugin.adqm.enrichment.dto.RelNodeContext;
-import io.arenadata.dtm.query.execution.plugin.adqm.enrichment.service.QueryExtendService;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
+import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.dto.QueryGeneratorContext;
+import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.service.QueryExtendService;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import lombok.var;
@@ -37,7 +37,7 @@ import static io.arenadata.dtm.query.execution.plugin.adqm.enrichment.utils.SqlE
 
 @Slf4j
 @Service("adqmDmlQueryExtendService")
-public class AdqmDmlQueryExtendServiceImpl implements QueryExtendService {
+public class AdqmDmlQueryExtendService implements QueryExtendService {
     private static final List<String> SYSTEM_FIELDS_PATTERNS = SYSTEM_FIELDS.stream()
         .map(sf -> sf + "(\\d+|)")
         .collect(Collectors.toList());
@@ -48,7 +48,7 @@ public class AdqmDmlQueryExtendServiceImpl implements QueryExtendService {
     private final AdqmHelperTableNamesFactory helperTableNamesFactory;
 
     @Autowired
-    public AdqmDmlQueryExtendServiceImpl(AdqmHelperTableNamesFactory helperTableNamesFactory) {
+    public AdqmDmlQueryExtendService(AdqmHelperTableNamesFactory helperTableNamesFactory) {
         this.helperTableNamesFactory = helperTableNamesFactory;
     }
 

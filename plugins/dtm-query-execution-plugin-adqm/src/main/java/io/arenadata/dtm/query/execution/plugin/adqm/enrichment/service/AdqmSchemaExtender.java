@@ -1,10 +1,10 @@
-package io.arenadata.dtm.query.execution.plugin.adqm.enrichment.service.impl;
+package io.arenadata.dtm.query.execution.plugin.adqm.enrichment.service;
 
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
-import io.arenadata.dtm.query.execution.plugin.adqm.enrichment.service.SchemaExtender;
+import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.service.SchemaExtender;
 import io.arenadata.dtm.query.execution.plugin.adqm.base.factory.AdqmHelperTableNamesFactory;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,11 +22,11 @@ import static io.arenadata.dtm.query.execution.plugin.adqm.base.utils.Constants.
  * Implementing a Logic to Physical Conversion
  */
 @Service("adqmSchemaExtender")
-public class AdqmSchemaExtenderImpl implements SchemaExtender {
+public class AdqmSchemaExtender implements SchemaExtender {
     private final AdqmHelperTableNamesFactory helperTableNamesFactory;
 
     @Autowired
-    public AdqmSchemaExtenderImpl(AdqmHelperTableNamesFactory helperTableNamesFactory) {
+    public AdqmSchemaExtender(AdqmHelperTableNamesFactory helperTableNamesFactory) {
         this.helperTableNamesFactory = helperTableNamesFactory;
     }
 

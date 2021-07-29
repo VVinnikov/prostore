@@ -1,11 +1,11 @@
-package io.arenadata.dtm.query.execution.plugin.adg.enrichment.service.impl;
+package io.arenadata.dtm.query.execution.plugin.adg.enrichment.service;
 
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.arenadata.dtm.query.execution.plugin.adg.base.factory.AdgHelperTableNamesFactory;
-import io.arenadata.dtm.query.execution.plugin.adg.enrichment.service.SchemaExtender;
+import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.service.SchemaExtender;
 import lombok.val;
 import org.springframework.stereotype.Service;
 
@@ -20,10 +20,10 @@ import static io.arenadata.dtm.query.execution.plugin.adg.base.utils.ColumnField
  * Implementing a Logic to Physical Conversion
  */
 @Service("adgSchemaExtender")
-public class AdgSchemaExtenderImpl implements SchemaExtender {
+public class AdgSchemaExtender implements SchemaExtender {
     private final AdgHelperTableNamesFactory helperTableNamesFactory;
 
-    public AdgSchemaExtenderImpl(AdgHelperTableNamesFactory helperTableNamesFactory) {
+    public AdgSchemaExtender(AdgHelperTableNamesFactory helperTableNamesFactory) {
         this.helperTableNamesFactory = helperTableNamesFactory;
     }
 

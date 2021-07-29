@@ -1,11 +1,11 @@
-package io.arenadata.dtm.query.execution.plugin.adg.enrichment.service.impl;
+package io.arenadata.dtm.query.execution.plugin.adg.enrichment.service;
 
 import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.common.delta.DeltaType;
-import io.arenadata.dtm.query.execution.plugin.adg.enrichment.dto.QueryGeneratorContext;
 import io.arenadata.dtm.query.execution.plugin.adg.base.factory.AdgHelperTableNamesFactory;
-import io.arenadata.dtm.query.execution.plugin.adg.enrichment.service.QueryExtendService;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
+import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.dto.QueryGeneratorContext;
+import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.service.QueryExtendService;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.prepare.CalciteCatalogReader;
@@ -26,10 +26,10 @@ import static io.arenadata.dtm.query.execution.plugin.adg.base.utils.ColumnField
 
 @Slf4j
 @Service("adgDmlQueryExtendService")
-public class AdgDmlQueryExtendServiceImpl implements QueryExtendService {
+public class AdgDmlQueryExtendService implements QueryExtendService {
     private final AdgHelperTableNamesFactory helperTableNamesFactory;
 
-    public AdgDmlQueryExtendServiceImpl(AdgHelperTableNamesFactory helperTableNamesFactory) {
+    public AdgDmlQueryExtendService(AdgHelperTableNamesFactory helperTableNamesFactory) {
         this.helperTableNamesFactory = helperTableNamesFactory;
     }
 

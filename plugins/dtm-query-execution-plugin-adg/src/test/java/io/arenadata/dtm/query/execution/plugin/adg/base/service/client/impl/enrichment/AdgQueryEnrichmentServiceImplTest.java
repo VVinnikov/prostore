@@ -3,23 +3,25 @@ package io.arenadata.dtm.query.execution.plugin.adg.base.service.client.impl.enr
 import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.common.delta.DeltaType;
 import io.arenadata.dtm.common.delta.SelectOnInterval;
+import io.arenadata.dtm.common.dto.QueryParserRequest;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
+import io.arenadata.dtm.query.calcite.core.service.QueryParserService;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
-import io.arenadata.dtm.query.execution.plugin.adg.enrichment.service.impl.AdgDmlQueryExtendServiceImpl;
-import io.arenadata.dtm.query.execution.plugin.adg.enrichment.service.impl.AdgQueryEnrichmentServiceImpl;
-import io.arenadata.dtm.query.execution.plugin.adg.enrichment.service.impl.AdgQueryGeneratorImpl;
-import io.arenadata.dtm.query.execution.plugin.adg.enrichment.service.impl.AdgSchemaExtenderImpl;
-import io.arenadata.dtm.query.execution.plugin.adg.calcite.service.AdgCalciteContextProvider;
-import io.arenadata.dtm.query.execution.plugin.adg.calcite.factory.AdgCalciteSchemaFactory;
-import io.arenadata.dtm.query.execution.plugin.adg.calcite.service.AdgCalciteDMLQueryParserService;
-import io.arenadata.dtm.query.execution.plugin.adg.calcite.configuration.AdgCalciteConfiguration;
-import io.arenadata.dtm.query.execution.plugin.adg.enrichment.dto.EnrichQueryRequest;
 import io.arenadata.dtm.query.execution.plugin.adg.base.factory.AdgHelperTableNamesFactoryImpl;
+import io.arenadata.dtm.query.execution.plugin.adg.calcite.configuration.AdgCalciteConfiguration;
+import io.arenadata.dtm.query.execution.plugin.adg.calcite.factory.AdgCalciteSchemaFactory;
 import io.arenadata.dtm.query.execution.plugin.adg.calcite.factory.AdgSchemaFactory;
-import io.arenadata.dtm.query.execution.plugin.adg.enrichment.service.QueryEnrichmentService;
+import io.arenadata.dtm.query.execution.plugin.adg.calcite.service.AdgCalciteContextProvider;
+import io.arenadata.dtm.query.execution.plugin.adg.calcite.service.AdgCalciteDMLQueryParserService;
+import io.arenadata.dtm.query.execution.plugin.adg.enrichment.service.AdgDmlQueryExtendService;
+import io.arenadata.dtm.query.execution.plugin.adg.enrichment.service.AdgQueryEnrichmentService;
+import io.arenadata.dtm.query.execution.plugin.adg.enrichment.service.AdgQueryGenerator;
+import io.arenadata.dtm.query.execution.plugin.adg.enrichment.service.AdgSchemaExtender;
 import io.arenadata.dtm.query.execution.plugin.adg.utils.TestUtils;
+import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.dto.EnrichQueryRequest;
+import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.service.QueryEnrichmentService;
 import io.vertx.core.Vertx;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestOptions;
@@ -41,6 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class AdgQueryEnrichmentServiceImplTest {
     private static final String ENV_NAME = "local";
     private final QueryEnrichmentService enrichService;
+    private final QueryParserService queryParserService;
 
     public AdgQueryEnrichmentServiceImplTest() {
         val calciteConfiguration = new AdgCalciteConfiguration();
@@ -51,16 +54,15 @@ class AdgQueryEnrichmentServiceImplTest {
                 parserConfig,
                 new AdgCalciteSchemaFactory(new AdgSchemaFactory()));
 
-        val queryParserService = new AdgCalciteDMLQueryParserService(contextProvider, Vertx.vertx());
+        queryParserService = new AdgCalciteDMLQueryParserService(contextProvider, Vertx.vertx());
         val helperTableNamesFactory = new AdgHelperTableNamesFactoryImpl();
-        val queryExtendService = new AdgDmlQueryExtendServiceImpl(helperTableNamesFactory);
+        val queryExtendService = new AdgDmlQueryExtendService(helperTableNamesFactory);
 
-        enrichService = new AdgQueryEnrichmentServiceImpl(
-                queryParserService,
+        enrichService = new AdgQueryEnrichmentService(
                 contextProvider,
-                new AdgQueryGeneratorImpl(queryExtendService,
+                new AdgQueryGenerator(queryExtendService,
                         calciteConfiguration.adgSqlDialect()),
-                new AdgSchemaExtenderImpl(helperTableNamesFactory));
+                new AdgSchemaExtender(helperTableNamesFactory));
     }
 
     private static void assertGrep(String data, String regexp) {
@@ -136,7 +138,8 @@ class AdgQueryEnrichmentServiceImplTest {
         TestSuite suite = TestSuite.create("the_test_suite");
         suite.test("executeQuery", context -> {
             Async async = context.async();
-            enrichService.enrich(enrichRequest)
+            queryParserService.parse(new QueryParserRequest(enrichRequest.getQuery(), enrichRequest.getSchema()))
+                    .compose(parserResponse -> enrichService.enrich(enrichRequest, parserResponse))
                     .onComplete(ar -> {
                         if (ar.succeeded()) {
                             sqlResult[0] = ar.result();

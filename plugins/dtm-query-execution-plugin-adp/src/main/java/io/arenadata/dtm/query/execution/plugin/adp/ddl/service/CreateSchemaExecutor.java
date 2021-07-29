@@ -1,7 +1,7 @@
-package io.arenadata.dtm.query.execution.plugin.adb.ddl.service;
+package io.arenadata.dtm.query.execution.plugin.adp.ddl.service;
 
-import io.arenadata.dtm.query.execution.plugin.adb.ddl.factory.DdlSqlFactory;
-import io.arenadata.dtm.query.execution.plugin.adb.query.service.DatabaseExecutor;
+import io.arenadata.dtm.query.execution.plugin.adp.db.service.DatabaseExecutor;
+import io.arenadata.dtm.query.execution.plugin.adp.ddl.factory.SchemaSqlFactory;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.DdlExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.service.DdlService;
@@ -14,20 +14,18 @@ import org.springframework.stereotype.Component;
 @Component
 public class CreateSchemaExecutor implements DdlExecutor<Void> {
 
-    private final DatabaseExecutor adbQueryExecutor;
-    private final DdlSqlFactory sqlFactory;
+    private final DatabaseExecutor queryExecutor;
+    private final SchemaSqlFactory sqlFactory;
 
-    @Autowired
-    public CreateSchemaExecutor(@Qualifier("adbQueryExecutor") DatabaseExecutor adbQueryExecutor,
-                                DdlSqlFactory sqlFactory) {
-        this.adbQueryExecutor = adbQueryExecutor;
-        this.sqlFactory = sqlFactory;
+    public CreateSchemaExecutor(DatabaseExecutor adpQueryExecutor) {
+        this.queryExecutor = adpQueryExecutor;
+        this.sqlFactory = new SchemaSqlFactory();
     }
 
     @Override
     public Future<Void> execute(DdlRequest request) {
         return createQuerySql(request)
-                .compose(adbQueryExecutor::executeUpdate);
+                .compose(queryExecutor::executeUpdate);
     }
 
     private Future<String> createQuerySql(DdlRequest request) {
@@ -44,7 +42,8 @@ public class CreateSchemaExecutor implements DdlExecutor<Void> {
 
     @Override
     @Autowired
-    public void register(@Qualifier("adbDdlService") DdlService<Void> service) {
+    public void register(@Qualifier("adpDdlService") DdlService<Void> service) {
         service.addExecutor(this);
     }
+
 }

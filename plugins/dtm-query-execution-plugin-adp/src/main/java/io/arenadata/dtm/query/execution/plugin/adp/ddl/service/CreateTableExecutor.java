@@ -1,8 +1,8 @@
-package io.arenadata.dtm.query.execution.plugin.adb.ddl.service;
+package io.arenadata.dtm.query.execution.plugin.adp.ddl.service;
 
-import io.arenadata.dtm.query.execution.plugin.adb.base.dto.metadata.AdbTables;
-import io.arenadata.dtm.query.execution.plugin.adb.ddl.factory.DdlSqlFactory;
-import io.arenadata.dtm.query.execution.plugin.adb.query.service.DatabaseExecutor;
+import io.arenadata.dtm.query.execution.plugin.adp.base.dto.metadata.AdpTables;
+import io.arenadata.dtm.query.execution.plugin.adp.db.service.DatabaseExecutor;
+import io.arenadata.dtm.query.execution.plugin.adp.ddl.factory.SchemaSqlFactory;
 import io.arenadata.dtm.query.execution.plugin.api.factory.CreateTableQueriesFactory;
 import io.arenadata.dtm.query.execution.plugin.api.request.DdlRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.DdlExecutor;
@@ -16,18 +16,17 @@ import org.springframework.stereotype.Component;
 @Component
 public class CreateTableExecutor implements DdlExecutor<Void> {
 
-    private final DatabaseExecutor adbQueryExecutor;
-    private final DdlSqlFactory sqlFactory;
+    private final DatabaseExecutor AdpQueryExecutor;
+    private final SchemaSqlFactory sqlFactory;
     private final DropTableExecutor dropTableExecutor;
-    private final CreateTableQueriesFactory<AdbTables<String>> createTableQueriesFactory;
+    private final CreateTableQueriesFactory<AdpTables<String>> createTableQueriesFactory;
 
     @Autowired
-    public CreateTableExecutor(@Qualifier("adbQueryExecutor") DatabaseExecutor adbQueryExecutor,
-                               DdlSqlFactory sqlFactory,
+    public CreateTableExecutor(@Qualifier("AdpQueryExecutor") DatabaseExecutor AdpQueryExecutor,
                                DropTableExecutor dropTableExecutor,
-                               CreateTableQueriesFactory<AdbTables<String>> createTableQueriesFactory) {
-        this.adbQueryExecutor = adbQueryExecutor;
-        this.sqlFactory = sqlFactory;
+                               CreateTableQueriesFactory<AdpTables<String>> createTableQueriesFactory) {
+        this.AdpQueryExecutor = AdpQueryExecutor;
+        this.sqlFactory = new SchemaSqlFactory();
         this.dropTableExecutor = dropTableExecutor;
         this.createTableQueriesFactory = createTableQueriesFactory;
     }
@@ -40,13 +39,13 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
 
     private Future<Void> createTableWithIndexes(DdlRequest request) {
         return Future.future(promise -> {
-            AdbTables<String> createTableQueries = createTableQueriesFactory.create(request.getEntity(), request.getEnvName());
+            AdpTables<String> createTableQueries = createTableQueriesFactory.create(request.getEntity(), request.getEnvName());
             String createTablesSql = String.join("; ", createTableQueries.getActual(),
-                    createTableQueries.getHistory(), createTableQueries.getStaging());
+                    createTableQueries.getStaging());
             String createIndexesSql = sqlFactory.createSecondaryIndexSqlQuery(request.getEntity().getSchema(),
                     request.getEntity().getName());
-            adbQueryExecutor.executeUpdate(createTablesSql)
-                    .compose(v -> adbQueryExecutor.executeUpdate(createIndexesSql))
+            AdpQueryExecutor.executeUpdate(createTablesSql)
+                    .compose(v -> AdpQueryExecutor.executeUpdate(createIndexesSql))
                     .onComplete(promise);
         });
     }
@@ -58,7 +57,8 @@ public class CreateTableExecutor implements DdlExecutor<Void> {
 
     @Override
     @Autowired
-    public void register(@Qualifier("adbDdlService") DdlService<Void> service) {
+    public void register(@Qualifier("adpDdlService") DdlService<Void> service) {
         service.addExecutor(this);
     }
+
 }

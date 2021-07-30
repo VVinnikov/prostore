@@ -460,7 +460,7 @@ class UploadKafkaExecutorTest {
         assertThat(BreakMppwContext.getReason(
                 pluginRequest.getDatamartMnemonic(),
                 pluginRequest.getSysCn()))
-                .isEqualTo(MppwStopReason.TIMEOUT_RECEIVED);
+                .isEqualTo(MppwStopReason.CHANGE_OFFSET_TIMEOUT);
         assertThat(BreakMppwContext.getNumberOfTasksByDatamart(pluginRequest.getDatamartMnemonic())).isEqualTo(1);
     }
 
@@ -532,7 +532,7 @@ class UploadKafkaExecutorTest {
         assertThat(BreakMppwContext.getReason(
                 pluginRequest.getDatamartMnemonic(),
                 pluginRequest.getSysCn()))
-                .isEqualTo(MppwStopReason.ERROR_RECEIVED);
+                .isEqualTo(MppwStopReason.FIRST_OFFSET_TIMEOUT);
         assertThat(BreakMppwContext.getNumberOfTasksByDatamart(pluginRequest.getDatamartMnemonic())).isEqualTo(1);
     }
 
@@ -604,7 +604,7 @@ class UploadKafkaExecutorTest {
         assertThat(BreakMppwContext.getReason(
                 pluginRequest.getDatamartMnemonic(),
                 pluginRequest.getSysCn()))
-                .isEqualTo(MppwStopReason.ERROR_RECEIVED);
+                .isEqualTo(MppwStopReason.FIRST_OFFSET_TIMEOUT);
         assertThat(BreakMppwContext.getNumberOfTasksByDatamart(pluginRequest.getDatamartMnemonic())).isEqualTo(1);
     }
 

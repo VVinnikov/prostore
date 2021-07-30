@@ -1,8 +1,0 @@
-databaseChangeLog:
-  - changeSet:
-      id:  20200731_120000
-      author: 'Aleksandr Kapustin'
-      changes:
-        - sqlFile:
-            path: 0001.sql
-            relativeToChangelogFile:  true

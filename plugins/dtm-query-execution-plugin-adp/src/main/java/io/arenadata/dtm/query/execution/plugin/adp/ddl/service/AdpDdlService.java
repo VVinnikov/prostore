@@ -15,6 +15,7 @@ import java.util.Map;
 
 @Service("adpDdlService")
 public class AdpDdlService implements DdlService<Void> {
+
     private final Map<SqlKind, DdlExecutor<Void>> ddlExecutors = new HashMap<>();
 
     @Override

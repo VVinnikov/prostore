@@ -5,12 +5,11 @@
 
     <groupId>io.arenadata.dtm</groupId>
     <artifactId>parent</artifactId>
-    <version>4.1.0</version>
+    <version>5.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>DTM Parent</name>
 
     <modules>
-        <module>dtm-migration</module>
         <module>dtm-common</module>
         <module>dtm-jdbc-driver</module>
         <module>dtm-kafka-core</module>

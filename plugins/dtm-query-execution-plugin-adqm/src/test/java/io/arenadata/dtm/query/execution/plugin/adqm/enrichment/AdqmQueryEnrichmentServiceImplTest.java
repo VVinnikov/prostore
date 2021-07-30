@@ -3,24 +3,26 @@ package io.arenadata.dtm.query.execution.plugin.adqm.enrichment;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.common.delta.DeltaType;
+import io.arenadata.dtm.common.dto.QueryParserRequest;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
+import io.arenadata.dtm.query.calcite.core.service.QueryParserService;
 import io.arenadata.dtm.query.execution.model.metadata.Datamart;
 import io.arenadata.dtm.query.execution.plugin.adqm.base.factory.AdqmHelperTableNamesFactoryImpl;
 import io.arenadata.dtm.query.execution.plugin.adqm.calcite.factory.AdqmCalciteSchemaFactory;
 import io.arenadata.dtm.query.execution.plugin.adqm.calcite.factory.AdqmSchemaFactory;
 import io.arenadata.dtm.query.execution.plugin.adqm.calcite.service.AdqmCalciteContextProvider;
 import io.arenadata.dtm.query.execution.plugin.adqm.calcite.service.AdqmCalciteDMLQueryParserService;
-import io.arenadata.dtm.query.execution.plugin.adqm.enrichment.dto.EnrichQueryRequest;
-import io.arenadata.dtm.query.execution.plugin.adqm.enrichment.service.QueryEnrichmentService;
-import io.arenadata.dtm.query.execution.plugin.adqm.enrichment.service.impl.AdqmDmlQueryExtendServiceImpl;
-import io.arenadata.dtm.query.execution.plugin.adqm.enrichment.service.impl.AdqmQueryEnrichmentServiceImpl;
-import io.arenadata.dtm.query.execution.plugin.adqm.enrichment.service.impl.AdqmQueryGeneratorImpl;
-import io.arenadata.dtm.query.execution.plugin.adqm.enrichment.service.impl.AdqmSchemaExtenderImpl;
+import io.arenadata.dtm.query.execution.plugin.adqm.enrichment.service.AdqmDmlQueryExtendService;
+import io.arenadata.dtm.query.execution.plugin.adqm.enrichment.service.AdqmQueryEnrichmentService;
+import io.arenadata.dtm.query.execution.plugin.adqm.enrichment.service.AdqmQueryGenerator;
+import io.arenadata.dtm.query.execution.plugin.adqm.enrichment.service.AdqmSchemaExtender;
 import io.arenadata.dtm.query.execution.plugin.adqm.query.service.AdqmQueryJoinConditionsCheckService;
 import io.arenadata.dtm.query.execution.plugin.adqm.query.service.AdqmQueryJoinConditionsCheckServiceImpl;
 import io.arenadata.dtm.query.execution.plugin.adqm.utils.TestUtils;
+import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.dto.EnrichQueryRequest;
+import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.service.QueryEnrichmentService;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.jackson.DatabindCodec;
 import io.vertx.junit5.VertxTestContext;
@@ -51,6 +53,7 @@ class AdqmQueryEnrichmentServiceImplTest {
     private static final int TIMEOUT_SECONDS = 120;
     private static final String ENV_NAME = "local";
     private static final List<Datamart> LOADED_DATAMARTS = loadDatamarts();
+    private final QueryParserService queryParserService;
     private final QueryEnrichmentService enrichService;
     private final String[] expectedSqls;
 
@@ -62,18 +65,18 @@ class AdqmQueryEnrichmentServiceImplTest {
                 parserConfig,
                 new AdqmCalciteSchemaFactory(new AdqmSchemaFactory()));
 
-        val queryParserService = new AdqmCalciteDMLQueryParserService(contextProvider, Vertx.vertx());
+        queryParserService = new AdqmCalciteDMLQueryParserService(contextProvider, Vertx.vertx());
         val helperTableNamesFactory = new AdqmHelperTableNamesFactoryImpl();
-        val queryExtendService = new AdqmDmlQueryExtendServiceImpl(helperTableNamesFactory);
+        val queryExtendService = new AdqmDmlQueryExtendService(helperTableNamesFactory);
 
         AdqmQueryJoinConditionsCheckService conditionsCheckService = mock(AdqmQueryJoinConditionsCheckServiceImpl.class);
         when(conditionsCheckService.isJoinConditionsCorrect(any())).thenReturn(true);
-        enrichService = new AdqmQueryEnrichmentServiceImpl(
+        enrichService = new AdqmQueryEnrichmentService(
                 queryParserService,
                 contextProvider,
-                new AdqmQueryGeneratorImpl(queryExtendService,
-                        TestUtils.CALCITE_CONFIGURATION.adqmSqlDialect(), conditionsCheckService),
-                new AdqmSchemaExtenderImpl(helperTableNamesFactory));
+                new AdqmQueryGenerator(queryExtendService,
+                        TestUtils.CALCITE_CONFIGURATION.adqmSqlDialect()),
+                new AdqmSchemaExtender(helperTableNamesFactory));
 
         val dmlBytes = Files.readAllBytes(Paths.get(getClass().getResource("/sql/expectedDmlSqls.sql").toURI()));
         expectedSqls = new String(dmlBytes, StandardCharsets.UTF_8).split("---");
@@ -89,7 +92,7 @@ class AdqmQueryEnrichmentServiceImplTest {
 
     @SneakyThrows
     private static String loadTextFromFile(String path) {
-        try (InputStream inputStream = AdqmQueryEnrichmentServiceImpl.class.getClassLoader().getResourceAsStream(path)) {
+        try (InputStream inputStream = AdqmQueryEnrichmentService.class.getClassLoader().getResourceAsStream(path)) {
             assert inputStream != null;
             return IOUtils.toString(inputStream, StandardCharsets.UTF_8);
         }
@@ -240,8 +243,8 @@ class AdqmQueryEnrichmentServiceImplTest {
                         QueryEnrichmentService service) {
         val testContext = new VertxTestContext();
         val actual = new String[]{""};
-
-        service.enrich(enrichRequest)
+        queryParserService.parse(new QueryParserRequest(enrichRequest.getQuery(), enrichRequest.getSchema()))
+                .compose(parserResponse -> service.enrich(enrichRequest, parserResponse))
                 .onComplete(ar -> {
                     if (ar.succeeded()) {
                         actual[0] = ar.result();

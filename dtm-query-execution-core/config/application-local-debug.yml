@@ -176,3 +176,16 @@ adqm:
 
   web-client:
     max-pool-size: ${ADQM_WEB_CLIENT_MAX_POOL_SIZE:100}
+
+adp:
+  datasource:
+    user: ${ADP_USERNAME:dtm}
+    password: ${ADP_PASS:dtm}
+    host: ${ADP_HOST:localhost}
+    port: ${ADP_PORT:5432}
+    poolSize: ${ADP_MAX_POOL_SIZE:3}
+    executorsCount: ${ADP_EXECUTORS_COUNT:3}
+    fetchSize: ${ADP_FETCH_SIZE:1000}
+    preparedStatementsCacheMaxSize: ${ADP_PREPARED_CACHE_MAX_SIZE:256}
+    preparedStatementsCacheSqlLimit: ${ADP_PREPARED_CACHE_SQL_LIMIT:2048}
+    preparedStatementsCache: ${ADP_PREPARED_CACHE:true}

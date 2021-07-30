@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.execution.plugin.adb.dml;
 import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.common.delta.DeltaType;
 import io.arenadata.dtm.common.delta.SelectOnInterval;
+import io.arenadata.dtm.common.dto.QueryParserRequest;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
 import io.arenadata.dtm.common.model.ddl.Entity;
 import io.arenadata.dtm.common.model.ddl.EntityField;
@@ -13,14 +14,14 @@ import io.arenadata.dtm.query.execution.plugin.adb.calcite.factory.AdbCalciteSch
 import io.arenadata.dtm.query.execution.plugin.adb.calcite.factory.AdbSchemaFactory;
 import io.arenadata.dtm.query.execution.plugin.adb.calcite.service.AdbCalciteContextProvider;
 import io.arenadata.dtm.query.execution.plugin.adb.calcite.service.AdbCalciteDMLQueryParserService;
-import io.arenadata.dtm.query.execution.plugin.adb.enrichment.dto.EnrichQueryRequest;
-import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.QueryEnrichmentService;
-import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.QueryExtendService;
-import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.impl.AdbDmlQueryExtendWithoutHistoryService;
-import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.impl.AdbQueryEnrichmentServiceImpl;
-import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.impl.AdbQueryGeneratorImpl;
-import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.impl.AdbSchemaExtenderImpl;
+import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.AdbDmlQueryExtendWithoutHistoryService;
+import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.AdbQueryEnrichmentService;
+import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.AdbQueryGenerator;
+import io.arenadata.dtm.query.execution.plugin.adb.enrichment.service.AdbSchemaExtender;
 import io.arenadata.dtm.query.execution.plugin.adb.utils.TestUtils;
+import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.dto.EnrichQueryRequest;
+import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.service.QueryEnrichmentService;
+import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.service.QueryExtendService;
 import io.vertx.core.Vertx;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
@@ -50,22 +51,18 @@ class AdbQueryEnrichmentServiceImplTest {
     private final CalciteConfiguration calciteConfiguration = new CalciteConfiguration();
     private final QueryExtendService queryExtender = new AdbDmlQueryExtendWithoutHistoryService();
     private final AdbCalciteContextProvider contextProvider = new AdbCalciteContextProvider(
-            calciteConfiguration.configDdlParser(
-                    calciteConfiguration.ddlParserImplFactory()
-            ),
+            calciteConfiguration.configDdlParser(calciteConfiguration.ddlParserImplFactory()),
             new AdbCalciteSchemaFactory(new AdbSchemaFactory()));
-    private final AdbQueryGeneratorImpl adbQueryGeneratorimpl = new AdbQueryGeneratorImpl(queryExtender, calciteConfiguration.adbSqlDialect());
-    private QueryParserService queryParserService;
+    private final AdbQueryGenerator adbQueryGeneratorimpl = new AdbQueryGenerator(queryExtender, calciteConfiguration.adbSqlDialect());
+    private final QueryParserService queryParserService = new AdbCalciteDMLQueryParserService(contextProvider, Vertx.vertx());
     private QueryEnrichmentService adbQueryEnrichmentService;
 
     @BeforeEach
-    void setUp(Vertx vertx) {
-        queryParserService = new AdbCalciteDMLQueryParserService(contextProvider, vertx);
-        adbQueryEnrichmentService = new AdbQueryEnrichmentServiceImpl(
-                queryParserService,
+    void setUp() {
+        adbQueryEnrichmentService = new AdbQueryEnrichmentService(
                 adbQueryGeneratorimpl,
                 contextProvider,
-                new AdbSchemaExtenderImpl());
+                new AdbSchemaExtender());
     }
 
     private static void assertGrep(String data, String regexp) {
@@ -81,7 +78,8 @@ class AdbQueryEnrichmentServiceImplTest {
                 prepareRequestDeltaNum("select * from shares.accounts");
 
         // act assert
-        adbQueryEnrichmentService.enrich(enrichQueryRequest)
+        queryParserService.parse(new QueryParserRequest(enrichQueryRequest.getQuery(), enrichQueryRequest.getSchema()))
+                .compose(parserResponse -> adbQueryEnrichmentService.enrich(enrichQueryRequest, parserResponse))
                 .onComplete(ar -> {
                     if (ar.failed()) {
                         testContext.failNow(ar.cause());
@@ -102,7 +100,8 @@ class AdbQueryEnrichmentServiceImplTest {
 
 
         // act assert
-        adbQueryEnrichmentService.enrich(enrichQueryRequest)
+        queryParserService.parse(new QueryParserRequest(enrichQueryRequest.getQuery(), enrichQueryRequest.getSchema()))
+                .compose(parserResponse -> adbQueryEnrichmentService.enrich(enrichQueryRequest, parserResponse))
                 .onComplete(ar -> {
                     if (ar.failed()) {
                         testContext.failNow(ar.cause());
@@ -123,7 +122,8 @@ class AdbQueryEnrichmentServiceImplTest {
 
 
         // act assert
-        adbQueryEnrichmentService.enrich(enrichQueryRequest)
+        queryParserService.parse(new QueryParserRequest(enrichQueryRequest.getQuery(), enrichQueryRequest.getSchema()))
+                .compose(parserResponse -> adbQueryEnrichmentService.enrich(enrichQueryRequest, parserResponse))
                 .onComplete(ar -> {
                     if (ar.failed()) {
                         testContext.failNow(ar.cause());
@@ -144,7 +144,8 @@ class AdbQueryEnrichmentServiceImplTest {
 
 
         // act assert
-        adbQueryEnrichmentService.enrich(enrichQueryRequest)
+        queryParserService.parse(new QueryParserRequest(enrichQueryRequest.getQuery(), enrichQueryRequest.getSchema()))
+                .compose(parserResponse -> adbQueryEnrichmentService.enrich(enrichQueryRequest, parserResponse))
                 .onComplete(ar -> {
                     if (ar.failed()) {
                         testContext.failNow(ar.cause());
@@ -165,7 +166,8 @@ class AdbQueryEnrichmentServiceImplTest {
 
 
         // act assert
-        adbQueryEnrichmentService.enrich(enrichQueryRequest)
+        queryParserService.parse(new QueryParserRequest(enrichQueryRequest.getQuery(), enrichQueryRequest.getSchema()))
+                .compose(parserResponse -> adbQueryEnrichmentService.enrich(enrichQueryRequest, parserResponse))
                 .onComplete(ar -> {
                     if (ar.failed()) {
                         testContext.failNow(ar.cause());
@@ -186,7 +188,8 @@ class AdbQueryEnrichmentServiceImplTest {
 
 
         // act assert
-        adbQueryEnrichmentService.enrich(enrichQueryRequest)
+        queryParserService.parse(new QueryParserRequest(enrichQueryRequest.getQuery(), enrichQueryRequest.getSchema()))
+                .compose(parserResponse -> adbQueryEnrichmentService.enrich(enrichQueryRequest, parserResponse))
                 .onComplete(ar -> {
                     if (ar.failed()) {
                         testContext.failNow(ar.cause());
@@ -213,7 +216,8 @@ class AdbQueryEnrichmentServiceImplTest {
                         ")x");
 
         // act assert
-        adbQueryEnrichmentService.enrich(enrichQueryRequest)
+        queryParserService.parse(new QueryParserRequest(enrichQueryRequest.getQuery(), enrichQueryRequest.getSchema()))
+                .compose(parserResponse -> adbQueryEnrichmentService.enrich(enrichQueryRequest, parserResponse))
                 .onComplete(ar -> {
                     if (ar.failed()) {
                         testContext.failNow(ar.cause());
@@ -233,7 +237,8 @@ class AdbQueryEnrichmentServiceImplTest {
                 "SELECT account_id FROM shares.accounts");
 
         // act assert
-        adbQueryEnrichmentService.enrich(enrichQueryRequest)
+        queryParserService.parse(new QueryParserRequest(enrichQueryRequest.getQuery(), enrichQueryRequest.getSchema()))
+                .compose(parserResponse -> adbQueryEnrichmentService.enrich(enrichQueryRequest, parserResponse))
                 .onComplete(ar -> {
                     if (ar.failed()) {
                         testContext.failNow(ar.cause());
@@ -254,7 +259,8 @@ class AdbQueryEnrichmentServiceImplTest {
                         "from shares.accounts a ");
 
         // act assert
-        adbQueryEnrichmentService.enrich(enrichQueryRequest)
+        queryParserService.parse(new QueryParserRequest(enrichQueryRequest.getQuery(), enrichQueryRequest.getSchema()))
+                .compose(parserResponse -> adbQueryEnrichmentService.enrich(enrichQueryRequest, parserResponse))
                 .onComplete(ar -> {
                     if (ar.failed()) {
                         testContext.failNow(ar.cause());
@@ -282,7 +288,8 @@ class AdbQueryEnrichmentServiceImplTest {
                         ")x");
 
         // act assert
-        adbQueryEnrichmentService.enrich(enrichQueryRequest)
+        queryParserService.parse(new QueryParserRequest(enrichQueryRequest.getQuery(), enrichQueryRequest.getSchema()))
+                .compose(parserResponse -> adbQueryEnrichmentService.enrich(enrichQueryRequest, parserResponse))
                 .onComplete(ar -> {
                     if (ar.failed()) {
                         testContext.failNow(ar.cause());
@@ -304,7 +311,8 @@ class AdbQueryEnrichmentServiceImplTest {
                 "select account_id, null, null from shares.accounts");
 
         // act assert
-        adbQueryEnrichmentService.enrich(enrichQueryRequest)
+        queryParserService.parse(new QueryParserRequest(enrichQueryRequest.getQuery(), enrichQueryRequest.getSchema()))
+                .compose(parserResponse -> adbQueryEnrichmentService.enrich(enrichQueryRequest, parserResponse))
                 .onComplete(ar -> {
                     if (ar.failed()) {
                         testContext.failNow(ar.cause());
@@ -325,7 +333,8 @@ class AdbQueryEnrichmentServiceImplTest {
                 "select account_id from shares.accounts limit 50");
 
         // act assert
-        adbQueryEnrichmentService.enrich(enrichQueryRequest)
+        queryParserService.parse(new QueryParserRequest(enrichQueryRequest.getQuery(), enrichQueryRequest.getSchema()))
+                .compose(parserResponse -> adbQueryEnrichmentService.enrich(enrichQueryRequest, parserResponse))
                 .onComplete(ar -> {
                     if (ar.failed()) {
                         testContext.failNow(ar.cause());
@@ -345,7 +354,8 @@ class AdbQueryEnrichmentServiceImplTest {
                 "select account_id from shares.accounts order by account_id limit 50");
 
         // act assert
-        adbQueryEnrichmentService.enrich(enrichQueryRequest)
+        queryParserService.parse(new QueryParserRequest(enrichQueryRequest.getQuery(), enrichQueryRequest.getSchema()))
+                .compose(parserResponse -> adbQueryEnrichmentService.enrich(enrichQueryRequest, parserResponse))
                 .onComplete(ar -> {
                     if (ar.failed()) {
                         testContext.failNow(ar.cause());
@@ -365,7 +375,8 @@ class AdbQueryEnrichmentServiceImplTest {
                 "select account_id from shares.accounts LIMIT 1 offset 50");
 
         // act assert
-        adbQueryEnrichmentService.enrich(enrichQueryRequest)
+        queryParserService.parse(new QueryParserRequest(enrichQueryRequest.getQuery(), enrichQueryRequest.getSchema()))
+                .compose(parserResponse -> adbQueryEnrichmentService.enrich(enrichQueryRequest, parserResponse))
                 .onComplete(ar -> {
                     if (ar.failed()) {
                         testContext.failNow(ar.cause());
@@ -385,7 +396,8 @@ class AdbQueryEnrichmentServiceImplTest {
                 "select account_id from shares.accounts limit 30 offset 50");
 
         // act assert
-        adbQueryEnrichmentService.enrich(enrichQueryRequest)
+        queryParserService.parse(new QueryParserRequest(enrichQueryRequest.getQuery(), enrichQueryRequest.getSchema()))
+                .compose(parserResponse -> adbQueryEnrichmentService.enrich(enrichQueryRequest, parserResponse))
                 .onComplete(ar -> {
                     if (ar.failed()) {
                         testContext.failNow(ar.cause());
@@ -405,7 +417,8 @@ class AdbQueryEnrichmentServiceImplTest {
                 "select account_id from shares.accounts fetch next 30 rows only offset 50");
 
         // act assert
-        adbQueryEnrichmentService.enrich(enrichQueryRequest)
+        queryParserService.parse(new QueryParserRequest(enrichQueryRequest.getQuery(), enrichQueryRequest.getSchema()))
+                .compose(parserResponse -> adbQueryEnrichmentService.enrich(enrichQueryRequest, parserResponse))
                 .onComplete(ar -> {
                     if (ar.failed()) {
                         testContext.failNow(ar.cause());
@@ -427,7 +440,8 @@ class AdbQueryEnrichmentServiceImplTest {
                         "JOIN test_datamart.transactions t ON t.account_id = a.account_id");
 
         // act assert
-        adbQueryEnrichmentService.enrich(enrichQueryRequest)
+        queryParserService.parse(new QueryParserRequest(enrichQueryRequest.getQuery(), enrichQueryRequest.getSchema()))
+                .compose(parserResponse -> adbQueryEnrichmentService.enrich(enrichQueryRequest, parserResponse))
                 .onComplete(ar -> {
                     if (ar.failed()) {
                         testContext.failNow(ar.cause());

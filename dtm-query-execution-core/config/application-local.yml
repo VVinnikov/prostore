@@ -187,3 +187,9 @@ adp:
     preparedStatementsCacheMaxSize: ${ADP_PREPARED_CACHE_MAX_SIZE:256}
     preparedStatementsCacheSqlLimit: ${ADP_PREPARED_CACHE_SQL_LIMIT:2048}
     preparedStatementsCache: ${ADP_PREPARED_CACHE:true}
+
+  mppw:
+    restStartLoadUrl: ${ADP_REST_START_LOAD_URL:http://localhost:8096/newdata/start}
+    restStopLoadUrl: ${ADP_REST_STOP_LOAD_URL:http://localhost:8096/newdata/stop}
+    restVersionUrl: ${ADP_MPPW_CONNECTOR_VERSION_URL:http://localhost:8096/versions}
+    kafkaConsumerGroup: ${ADP_KAFKA_CONSUMER_GROUP:adp-load}

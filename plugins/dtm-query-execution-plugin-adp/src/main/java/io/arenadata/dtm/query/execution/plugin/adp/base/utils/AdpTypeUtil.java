@@ -50,5 +50,5 @@ public class AdpTypeUtil {
                 .map(sizeVal -> String.format("(%s)", sizeVal))
                 .orElse("");
     }
-    
+
 }

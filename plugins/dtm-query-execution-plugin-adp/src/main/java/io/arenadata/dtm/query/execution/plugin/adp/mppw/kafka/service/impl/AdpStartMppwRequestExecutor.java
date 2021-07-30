@@ -1,0 +1,52 @@
+package io.arenadata.dtm.query.execution.plugin.adp.mppw.kafka.service.impl;
+
+import io.arenadata.dtm.common.reader.QueryResult;
+import io.arenadata.dtm.query.execution.plugin.adp.base.properties.AdpMppwProperties;
+import io.arenadata.dtm.query.execution.plugin.adp.mppw.dto.AdpConnectorMppwStartRequest;
+import io.arenadata.dtm.query.execution.plugin.adp.mppw.kafka.service.AdpMppwRequestExecutor;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaRequest;
+import io.vertx.core.Future;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.apache.avro.Schema;
+import org.springframework.stereotype.Service;
+
+@Slf4j
+@Service("adpStartMppwRequestExecutor")
+public class AdpStartMppwRequestExecutor implements AdpMppwRequestExecutor {
+    private static final String STAGING = "_staging";
+    private final AdpConnectorClient connectorClient;
+    private final AdpMppwProperties adpMppwProperties;
+
+    public AdpStartMppwRequestExecutor(AdpConnectorClient connectorClient,
+                                       AdpMppwProperties adpMppwProperties) {
+        this.connectorClient = connectorClient;
+        this.adpMppwProperties = adpMppwProperties;
+    }
+
+    @Override
+    public Future<QueryResult> execute(MppwKafkaRequest request) {
+        return Future.future(promise -> {
+            log.info("[ADP] Trying to start MPPW, request: [{}]", request);
+            val connectorRequest = AdpConnectorMppwStartRequest.builder()
+                    .requestId(request.getRequestId().toString())
+                    .datamart(request.getDatamartMnemonic())
+                    .tableName(request.getDestinationTableName() + STAGING)
+                    .kafkaBrokers(request.getBrokers())
+                    .kafkaTopic(request.getTopic())
+                    .consumerGroup(adpMppwProperties.getKafkaConsumerGroup())
+                    .format(request.getUploadMetadata().getFormat().getName())
+                    .schema(new Schema.Parser().parse(request.getUploadMetadata().getExternalSchema()))
+                    .build();
+            connectorClient.startMppw(connectorRequest)
+                    .onSuccess(v -> {
+                        log.info("[ADP] Mppw started successfully");
+                        promise.complete(QueryResult.emptyResult());
+                    })
+                    .onFailure(t -> {
+                        log.error("[ADP] Mppw failed to start", t);
+                        promise.fail(t);
+                    });
+        });
+    }
+}

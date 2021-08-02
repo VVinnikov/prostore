@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.plugin.adp.mppw.dto;
+package io.arenadata.dtm.query.execution.plugin.adp.connector.dto;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;

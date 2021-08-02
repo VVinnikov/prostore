@@ -2,6 +2,7 @@ package io.arenadata.dtm.query.execution.plugin.adp.mppw.kafka.service.impl;
 
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.plugin.adp.base.properties.AdpMppwProperties;
+import io.arenadata.dtm.query.execution.plugin.adp.connector.AdpConnectorClient;
 import io.arenadata.dtm.query.execution.plugin.adp.mppw.dto.AdpConnectorMppwStartRequest;
 import io.arenadata.dtm.query.execution.plugin.adp.mppw.kafka.service.AdpMppwRequestExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaRequest;

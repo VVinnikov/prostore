@@ -3,6 +3,7 @@ package io.arenadata.dtm.query.execution.plugin.adp.mppw.kafka.service.impl;
 import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.reader.QueryResult;
+import io.arenadata.dtm.query.execution.plugin.adp.connector.AdpConnectorClient;
 import io.arenadata.dtm.query.execution.plugin.adp.mppw.dto.AdpConnectorMppwStopRequest;
 import io.arenadata.dtm.query.execution.plugin.adp.mppw.dto.AdpTransferDataRequest;
 import io.arenadata.dtm.query.execution.plugin.adp.mppw.kafka.service.AdpMppwRequestExecutor;

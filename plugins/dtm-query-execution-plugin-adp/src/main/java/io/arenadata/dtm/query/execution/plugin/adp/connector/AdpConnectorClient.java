@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.plugin.adp.mppw.kafka.service.impl;
+package io.arenadata.dtm.query.execution.plugin.adp.connector;
 
 import io.arenadata.dtm.query.execution.plugin.adp.base.properties.AdpMppwProperties;
 import io.arenadata.dtm.query.execution.plugin.adp.mppw.dto.AdpConnectorMpprRequest;

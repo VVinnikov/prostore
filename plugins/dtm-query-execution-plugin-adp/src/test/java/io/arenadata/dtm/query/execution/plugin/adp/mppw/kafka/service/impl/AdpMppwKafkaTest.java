@@ -8,6 +8,7 @@ import io.arenadata.dtm.common.model.ddl.EntityField;
 import io.arenadata.dtm.common.model.ddl.ExternalTableFormat;
 import io.arenadata.dtm.common.reader.QueryResult;
 import io.arenadata.dtm.query.execution.plugin.adp.base.properties.AdpMppwProperties;
+import io.arenadata.dtm.query.execution.plugin.adp.connector.AdpConnectorClient;
 import io.arenadata.dtm.query.execution.plugin.adp.db.service.DatabaseExecutor;
 import io.arenadata.dtm.query.execution.plugin.adp.mppw.dto.AdpConnectorMppwStartRequest;
 import io.arenadata.dtm.query.execution.plugin.adp.mppw.dto.AdpConnectorMppwStopRequest;

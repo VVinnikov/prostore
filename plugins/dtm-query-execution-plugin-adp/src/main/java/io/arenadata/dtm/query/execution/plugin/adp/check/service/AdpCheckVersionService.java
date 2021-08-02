@@ -10,7 +10,6 @@ import io.arenadata.dtm.query.execution.plugin.api.check.CheckVersionRequest;
 import io.arenadata.dtm.query.execution.plugin.api.service.check.CheckVersionService;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -22,7 +21,6 @@ import java.util.stream.Collectors;
 import static io.arenadata.dtm.query.execution.plugin.adp.check.factory.AdpVersionQueriesFactory.*;
 
 @Service("adpCheckVersionService")
-@Slf4j
 public class AdpCheckVersionService implements CheckVersionService {
 
     private final DatabaseExecutor databaseExecutor;

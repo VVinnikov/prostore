@@ -9,7 +9,7 @@ public class AdpFunctionFactory {
             "    LEAKPROOF\n" +
             "    RETURNS NULL ON NULL INPUT;";
 
-    public static final String createInt32HashFunction() {
+    public static String createInt32HashFunction() {
         return CREATE_OR_REPLACE_FUNC;
     }
 }

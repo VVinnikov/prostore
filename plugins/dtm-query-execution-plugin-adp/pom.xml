@@ -30,17 +30,23 @@
         </dependency>
         <dependency>
             <groupId>io.arenadata.dtm</groupId>
+            <artifactId>dtm-kafka-core</artifactId>
+            <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.arenadata</groupId>
+                    <artifactId>dtm-common</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.arenadata.dtm</groupId>
             <artifactId>dtm-query-execution-plugin-api</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>io.arenadata.dtm</groupId>
             <artifactId>dtm-calcite-core</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.arenadata.dtm</groupId>
-            <artifactId>dtm-kafka-core</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -59,6 +65,11 @@
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-pg-client</artifactId>
+            <version>${vertx.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-web-client</artifactId>
             <version>${vertx.version}</version>
         </dependency>
         <dependency>

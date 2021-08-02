@@ -188,6 +188,9 @@ adp:
     preparedStatementsCacheSqlLimit: ${ADP_PREPARED_CACHE_SQL_LIMIT:2048}
     preparedStatementsCache: ${ADP_PREPARED_CACHE:true}
 
+  mppr:
+    restVersionUrl: ${ADQM_MPPR_CONNECTOR_VERSION_URL:http://localhost:8094/versions}
+
   mppw:
     restStartLoadUrl: ${ADP_REST_START_LOAD_URL:http://localhost:8096/newdata/start}
     restStopLoadUrl: ${ADP_REST_STOP_LOAD_URL:http://localhost:8096/newdata/stop}

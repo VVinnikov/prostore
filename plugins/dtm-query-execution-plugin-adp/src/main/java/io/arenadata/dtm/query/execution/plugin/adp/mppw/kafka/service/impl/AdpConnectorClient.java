@@ -6,7 +6,6 @@ import io.arenadata.dtm.query.execution.plugin.adp.mppw.dto.AdpConnectorMppwStar
 import io.arenadata.dtm.query.execution.plugin.adp.mppw.dto.AdpConnectorMppwStopRequest;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.vertx.core.Future;
-import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.WebClient;
 import lombok.extern.slf4j.Slf4j;
@@ -19,9 +18,9 @@ public class AdpConnectorClient {
     private final WebClient webClient;
     private final AdpMppwProperties mppwProperties;
 
-    public AdpConnectorClient(@Qualifier("coreVertx") Vertx vertx,
+    public AdpConnectorClient(@Qualifier("adpWebClient") WebClient webClient,
                               AdpMppwProperties mppwProperties) {
-        this.webClient = WebClient.create(vertx);
+        this.webClient = webClient;
         this.mppwProperties = mppwProperties;
     }
 

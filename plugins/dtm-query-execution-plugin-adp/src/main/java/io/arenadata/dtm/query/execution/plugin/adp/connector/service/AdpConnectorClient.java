@@ -1,5 +1,7 @@
 package io.arenadata.dtm.query.execution.plugin.adp.connector.service;
 
+import io.arenadata.dtm.common.exception.DtmException;
+import io.arenadata.dtm.common.version.VersionInfo;
 import io.arenadata.dtm.query.execution.plugin.adp.base.properties.AdpMpprProperties;
 import io.arenadata.dtm.query.execution.plugin.adp.base.properties.AdpMppwProperties;
 import io.arenadata.dtm.query.execution.plugin.adp.connector.dto.AdpConnectorMpprRequest;
@@ -7,11 +9,19 @@ import io.arenadata.dtm.query.execution.plugin.adp.connector.dto.AdpConnectorMpp
 import io.arenadata.dtm.query.execution.plugin.adp.connector.dto.AdpConnectorMppwStopRequest;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.vertx.core.Future;
+import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -34,8 +44,6 @@ public class AdpConnectorClient {
             executePostRequest(mppwProperties.getRestStartLoadUrl(), data)
                     .onComplete(event);
         });
-
-
     }
 
     public Future<Void> stopMppw(AdpConnectorMppwStopRequest request) {
@@ -52,6 +60,16 @@ public class AdpConnectorClient {
             executePostRequest(mpprProperties.getRestLoadUrl(), data)
                     .onComplete(event);
         });
+    }
+
+    public Future<List<VersionInfo>> getMppwVersion() {
+        return executeGetRequest(mppwProperties.getRestVersionUrl())
+                .map(this::handleVersionInfoResponse);
+    }
+
+    public Future<List<VersionInfo>> getMpprVersion() {
+        return executeGetRequest(mpprProperties.getRestVersionUrl())
+                .map(this::handleVersionInfoResponse);
     }
 
     private Future<Void> executePostRequest(String uri, JsonObject data) {
@@ -77,5 +95,25 @@ public class AdpConnectorClient {
                                 String.format("Request[POST] to [%s] failed", uri), t));
                     });
         });
+    }
+
+    private Future<HttpResponse<Buffer>> executeGetRequest(String url) {
+        return Future.future(promise -> {
+            log.debug("Send request to [{}]", url);
+            webClient.getAbs(url)
+                    .send(promise);
+        });
+    }
+
+    private List<VersionInfo> handleVersionInfoResponse(HttpResponse<Buffer> response) {
+        log.trace("Handle response [{}]", response);
+        val statusCode = response.statusCode();
+        if (statusCode == 200) {
+            return response.bodyAsJsonArray().stream()
+                    .map(o -> Json.decodeValue(o.toString(), VersionInfo.class))
+                    .collect(Collectors.toList());
+        } else {
+            throw new DtmException("Error in receiving version info");
+        }
     }
 }

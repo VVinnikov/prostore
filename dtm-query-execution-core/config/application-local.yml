@@ -195,6 +195,6 @@ adp:
     kafkaConsumerGroup: ${ADP_KAFKA_CONSUMER_GROUP:adp-load}
 
   mppr:
-    restLoadUrl: ${ADQM_MPPR_CONNECTOR_URL:http://localhost:8086/query}
-    restVersionUrl: ${ADQM_MPPR_CONNECTOR_VERSION_URL:http://localhost:8094/versions}
+    restLoadUrl: ${ADP_MPPR_QUERY_URL:http://localhost:8094/query}
+    restVersionUrl: ${ADP_MPPR_CONNECTOR_VERSION_URL:http://localhost:8094/versions}
 

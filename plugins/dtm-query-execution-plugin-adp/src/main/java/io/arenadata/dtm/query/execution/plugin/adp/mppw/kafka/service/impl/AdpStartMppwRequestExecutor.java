@@ -1,9 +1,10 @@
 package io.arenadata.dtm.query.execution.plugin.adp.mppw.kafka.service.impl;
 
 import io.arenadata.dtm.common.reader.QueryResult;
+import io.arenadata.dtm.query.execution.plugin.adp.base.Constants;
 import io.arenadata.dtm.query.execution.plugin.adp.base.properties.AdpMppwProperties;
-import io.arenadata.dtm.query.execution.plugin.adp.connector.AdpConnectorClient;
-import io.arenadata.dtm.query.execution.plugin.adp.mppw.dto.AdpConnectorMppwStartRequest;
+import io.arenadata.dtm.query.execution.plugin.adp.connector.dto.AdpConnectorMppwStartRequest;
+import io.arenadata.dtm.query.execution.plugin.adp.connector.service.AdpConnectorClient;
 import io.arenadata.dtm.query.execution.plugin.adp.mppw.kafka.service.AdpMppwRequestExecutor;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaRequest;
 import io.vertx.core.Future;
@@ -15,7 +16,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service("adpStartMppwRequestExecutor")
 public class AdpStartMppwRequestExecutor implements AdpMppwRequestExecutor {
-    private static final String STAGING = "_staging";
+    private static final String STAGING_POSTFIX = "_" + Constants.STAGING_TABLE;
     private final AdpConnectorClient connectorClient;
     private final AdpMppwProperties adpMppwProperties;
 
@@ -32,7 +33,7 @@ public class AdpStartMppwRequestExecutor implements AdpMppwRequestExecutor {
             val connectorRequest = AdpConnectorMppwStartRequest.builder()
                     .requestId(request.getRequestId().toString())
                     .datamart(request.getDatamartMnemonic())
-                    .tableName(request.getDestinationTableName() + STAGING)
+                    .tableName(request.getDestinationTableName() + STAGING_POSTFIX)
                     .kafkaBrokers(request.getBrokers())
                     .kafkaTopic(request.getTopic())
                     .consumerGroup(adpMppwProperties.getKafkaConsumerGroup())

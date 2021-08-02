@@ -1,9 +1,10 @@
-package io.arenadata.dtm.query.execution.plugin.adp.mppw.kafka.service.impl;
+package io.arenadata.dtm.query.execution.plugin.adp.connector.service;
 
+import io.arenadata.dtm.query.execution.plugin.adp.base.properties.AdpMpprProperties;
 import io.arenadata.dtm.query.execution.plugin.adp.base.properties.AdpMppwProperties;
-import io.arenadata.dtm.query.execution.plugin.adp.mppw.dto.AdpConnectorMpprRequest;
-import io.arenadata.dtm.query.execution.plugin.adp.mppw.dto.AdpConnectorMppwStartRequest;
-import io.arenadata.dtm.query.execution.plugin.adp.mppw.dto.AdpConnectorMppwStopRequest;
+import io.arenadata.dtm.query.execution.plugin.adp.connector.dto.AdpConnectorMpprRequest;
+import io.arenadata.dtm.query.execution.plugin.adp.connector.dto.AdpConnectorMppwStartRequest;
+import io.arenadata.dtm.query.execution.plugin.adp.connector.dto.AdpConnectorMppwStopRequest;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
@@ -18,11 +19,14 @@ import org.springframework.stereotype.Service;
 public class AdpConnectorClient {
     private final WebClient webClient;
     private final AdpMppwProperties mppwProperties;
+    private final AdpMpprProperties mpprProperties;
 
     public AdpConnectorClient(@Qualifier("coreVertx") Vertx vertx,
-                              AdpMppwProperties mppwProperties) {
+                              AdpMppwProperties mppwProperties,
+                              AdpMpprProperties mpprProperties) {
         this.webClient = WebClient.create(vertx);
         this.mppwProperties = mppwProperties;
+        this.mpprProperties = mpprProperties;
     }
 
     public Future<Void> startMppw(AdpConnectorMppwStartRequest request) {
@@ -44,7 +48,11 @@ public class AdpConnectorClient {
     }
 
     public Future<Void> runMppr(AdpConnectorMpprRequest request) {
-        return Future.failedFuture(new UnsupportedOperationException("Not implemented"));
+        return Future.future(event -> {
+            JsonObject data = JsonObject.mapFrom(request);
+            executePostRequest(mpprProperties.getRestLoadUrl(), data)
+                    .onComplete(event);
+        });
     }
 
     private Future<Void> executePostRequest(String uri, JsonObject data) {

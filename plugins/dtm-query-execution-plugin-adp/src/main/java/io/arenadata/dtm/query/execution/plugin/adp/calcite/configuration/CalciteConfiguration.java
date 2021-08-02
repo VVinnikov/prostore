@@ -1,9 +1,15 @@
 package io.arenadata.dtm.query.execution.plugin.adp.calcite.configuration;
 
+import io.arenadata.dtm.query.calcite.core.configuration.CalciteCoreConfiguration;
 import io.arenadata.dtm.query.calcite.core.dialect.LimitSqlDialect;
 import org.apache.calcite.avatica.util.Casing;
+import org.apache.calcite.avatica.util.Quoting;
 import org.apache.calcite.sql.SqlDialect;
+import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.sql.parser.SqlParserImplFactory;
+import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.util.ConversionUtil;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -20,6 +26,18 @@ public class CalciteConfiguration {
         System.setProperty("saffron.default.collation.name", String.format("%s$en_US", DEFAULT_CHARSET.name()));
     }
 
+    @Bean("adpParserConfig")
+    public SqlParser.Config configDdlParser(@Qualifier("adpParser") SqlParserImplFactory factory) {
+        return SqlParser.configBuilder()
+                .setParserFactory(factory)
+                .setConformance(SqlConformanceEnum.DEFAULT)
+                .setCaseSensitive(false)
+                .setQuotedCasing(Casing.UNCHANGED)
+                .setUnquotedCasing(Casing.TO_LOWER)
+                .setQuoting(Quoting.DOUBLE_QUOTE)
+                .build();
+    }
+
     @Bean("adpSqlDialect")
     public SqlDialect adpSqlDialect() {
         SqlDialect.Context CONTEXT = SqlDialect.EMPTY_CONTEXT
@@ -31,4 +49,8 @@ public class CalciteConfiguration {
         return new LimitSqlDialect(CONTEXT);
     }
 
+    @Bean("adpParser")
+    public SqlParserImplFactory ddlParserImplFactory() {
+        return new CalciteCoreConfiguration().eddlParserImplFactory();
+    }
 }

@@ -191,3 +191,8 @@ adp:
     restStopLoadUrl: ${ADP_REST_STOP_LOAD_URL:http://localhost:8096/newdata/stop}
     restVersionUrl: ${ADP_MPPW_CONNECTOR_VERSION_URL:http://localhost:8096/versions}
     kafkaConsumerGroup: ${ADP_KAFKA_CONSUMER_GROUP:adp-load}
+
+  mppr:
+    restLoadUrl: ${ADP_MPPR_QUERY_URL:http://localhost:8094/query}
+    restVersionUrl: ${ADP_MPPR_CONNECTOR_VERSION_URL:http://localhost:8094/versions}
+

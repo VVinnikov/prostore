@@ -302,12 +302,39 @@ class CreateViewDdlExecutorTest {
     }
 
     @Test
-    void executeJoinWrongEntityTypeError() throws SqlParseException {
+    void executeInnerJoinWrongEntityTypeError() throws SqlParseException {
+        testJoinWithWrongEntityType("INNER");
+    }
+
+    @Test
+    void executeFullJoinWrongEntityTypeError() throws SqlParseException {
+        testJoinWithWrongEntityType("FULL");
+    }
+
+    @Test
+    void executeLeftJoinWrongEntityTypeError() throws SqlParseException {
+        testJoinWithWrongEntityType("LEFT");
+    }
+
+    @Test
+    void executeRightJoinWrongEntityTypeError() throws SqlParseException {
+        testJoinWithWrongEntityType("RIGHT");
+    }
+
+    @Test
+    void executeCrossJoinWrongEntityTypeError() throws SqlParseException {
+        testJoinWithWrongEntityType("CROSS");
+    }
+
+    @Test
+    void executeMultipleJoinWrongEntityTypeError() throws SqlParseException {
         Promise<QueryResult> promise = Promise.promise();
 
         queryRequest.setSql(String.format("CREATE OR REPLACE VIEW %s.%s AS SELECT * FROM %s.%s " +
+                        "JOIN %s.%s ON %s.id = %s.id " +
                         "JOIN %s.%s ON %s.id = %s.id",
                 schema, entityList.get(1).getName(), schema, entityList.get(2).getName(),
+                schema, entityList.get(3).getName(), entityList.get(2).getName(), entityList.get(3).getName(),
                 schema, entityList.get(0).getName(), entityList.get(2).getName(), entityList.get(0).getName()));
         SqlNode sqlNode = planner.parse(queryRequest.getSql());
         DdlRequestContext context = new DdlRequestContext(null, new DatamartRequest(queryRequest), sqlNode, null, null);
@@ -330,6 +357,9 @@ class CreateViewDdlExecutorTest {
 
         when(entityDao.getEntity(schema, entityList.get(0).getName()))
                 .thenReturn(Future.succeededFuture(entityList.get(0)));
+
+        when(entityDao.getEntity(schema, entityList.get(3).getName()))
+                .thenReturn(Future.succeededFuture(entityList.get(3)));
 
         when(entityDao.createEntity(any()))
                 .thenReturn(Future.failedFuture(new EntityAlreadyExistsException("")));
@@ -408,5 +438,47 @@ class CreateViewDdlExecutorTest {
                 .onComplete(promise);
         assertTrue(promise.future().failed());
         assertTrue(promise.future().cause() instanceof ValidationDtmException);
+    }
+
+    private void testJoinWithWrongEntityType(String joinType) throws SqlParseException {
+        Promise<QueryResult> promise = Promise.promise();
+
+        String sql = String.format("CREATE OR REPLACE VIEW %s.%s AS SELECT * FROM %s.%s " +
+                        "%s JOIN %s.%s",
+                schema, entityList.get(1).getName(), schema, entityList.get(2).getName(),
+                joinType, schema, entityList.get(0).getName());
+        if (!joinType.equals("CROSS")) {
+            sql += String.format(" ON %s.id = %s.id", entityList.get(2).getName(), entityList.get(0).getName());
+        }
+        queryRequest.setSql(sql);
+        SqlNode sqlNode = planner.parse(queryRequest.getSql());
+        DdlRequestContext context = new DdlRequestContext(null, new DatamartRequest(queryRequest), sqlNode, null, null);
+
+        when(parserService.parse(any()))
+                .thenReturn(Future.succeededFuture(parse(contextProvider, new QueryParserRequest(((SqlCreateView) sqlNode).getQuery(), logicSchema))));
+
+        when(columnMetadataService.getColumnMetadata(any(QueryParserRequest.class)))
+                .thenReturn(Future.succeededFuture(Collections.singletonList(ColumnMetadata.builder()
+                        .name("id")
+                        .type(ColumnType.BIGINT)
+                        .build())));
+
+        when(entityDao.getEntity(schema, entityList.get(2).getName()))
+                .thenReturn(Future.succeededFuture(entityList.get(2)))
+                .thenReturn(Future.succeededFuture(entityList.get(2)));
+
+        when(entityDao.getEntity(schema, entityList.get(1).getName()))
+                .thenReturn(Future.succeededFuture(entityList.get(1)));
+
+        when(entityDao.getEntity(schema, entityList.get(0).getName()))
+                .thenReturn(Future.succeededFuture(entityList.get(0)));
+
+        when(entityDao.createEntity(any()))
+                .thenReturn(Future.failedFuture(new EntityAlreadyExistsException("")));
+
+        createViewDdlExecutor.execute(context, sqlNodeName)
+                .onComplete(promise);
+        assertTrue(promise.future().failed());
+        assertThat(promise.future().cause().getMessage()).startsWith("Disallowed view or directive in a subquery");
     }
 }

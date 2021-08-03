@@ -37,8 +37,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 @ExtendWith(VertxExtension.class)
@@ -387,6 +386,26 @@ class AdbQueryEnrichmentServiceImplTest {
                         assertGrep(ar.result(), "SELECT account_id FROM shares.accounts_actual WHERE sys_from >= 1 AND sys_from <= 5 LIMIT 1 OFFSET 50");
                     }).completeNow();
                 });
+    }
+
+    @Test
+    void enrichWithManyInKeyword(VertxTestContext testContext) {
+        // arrange
+        EnrichQueryRequest enrichQueryRequest = prepareRequestDeltaNum(
+                "SELECT account_id FROM shares.accounts WHERE account_id IN (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23)");
+
+        // act assert
+        queryParserService.parse(new QueryParserRequest(enrichQueryRequest.getQuery(), enrichQueryRequest.getSchema()))
+                .compose(parserResponse -> adbQueryEnrichmentService.enrich(enrichQueryRequest, parserResponse))
+                .onComplete(ar -> testContext.verify(() -> {
+                    if (ar.failed()) {
+                        fail(ar.cause());
+                    }
+
+                    // full of or conditions (not joins)
+                    String expected = "SELECT account_id FROM (SELECT account_id, account_type FROM shares.accounts_actual WHERE sys_from <= 1 AND COALESCE(sys_to, 9223372036854775807) >= 1) AS t0 WHERE account_id = 1 OR account_id = 2 OR (account_id = 3 OR (account_id = 4 OR account_id = 5)) OR (account_id = 6 OR (account_id = 7 OR account_id = 8) OR (account_id = 9 OR (account_id = 10 OR account_id = 11))) OR (account_id = 12 OR (account_id = 13 OR account_id = 14) OR (account_id = 15 OR (account_id = 16 OR account_id = 17)) OR (account_id = 18 OR (account_id = 19 OR account_id = 20) OR (account_id = 21 OR (account_id = 22 OR account_id = 23))))";
+                    assertEquals(expected, ar.result());
+                }).completeNow());
     }
 
     @Test

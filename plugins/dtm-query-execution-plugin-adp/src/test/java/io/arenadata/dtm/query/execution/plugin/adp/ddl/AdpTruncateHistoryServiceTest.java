@@ -20,7 +20,6 @@ import org.apache.calcite.tools.Planner;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -52,49 +51,50 @@ class AdpTruncateHistoryServiceTest {
     }
 
     @Test
-    void test() {
-        List<String> expectedList = Collections.singletonList(
+    void testWithoutConditions() {
+        List<String> expectedSqlList = Collections.singletonList(
                 String.format("DELETE FROM %s.%s_actual", SCHEMA, TABLE)
         );
-        test(null, expectedList);
+        test(null, expectedSqlList);
     }
 
     @Test
     void testWithConditions() {
         String conditions = "id > 2";
-        List<String> expectedList = Collections.singletonList(
+        List<String> expectedSqlList = Collections.singletonList(
                 String.format("DELETE FROM %s.%s_actual WHERE %s", SCHEMA, TABLE, conditions));
-        test(conditions, expectedList);
+        test(conditions, expectedSqlList);
     }
 
     @Test
     void testWithSysCn() {
         Long sysCn = 1L;
-        String expected = String.format("DELETE FROM %s.%s_actual WHERE sys_to < %s", SCHEMA, TABLE, sysCn);
-        test(sysCn, null, expected);
+        String expectedSql = String.format("DELETE FROM %s.%s_actual WHERE sys_to < %s", SCHEMA, TABLE, sysCn);
+        test(sysCn, null, expectedSql);
     }
 
     @Test
     void testWithConditionsAndSysCn() {
         String conditions = "id > 2";
         Long sysCn = 1L;
-        String expected = String.format("DELETE FROM %s.%s_actual WHERE %s AND sys_to < %s", SCHEMA, TABLE, conditions, sysCn);
-        test(sysCn, conditions, expected);
+        String expectedSql = String.format("DELETE FROM %s.%s_actual WHERE %s AND sys_to < %s", SCHEMA, TABLE, conditions, sysCn);
+        test(sysCn, conditions, expectedSql);
     }
 
-    private void test(String conditions, List<String> list) {
+    private void test(String conditions, List<String> expectedSqlList) {
         truncateHistoryService.truncateHistory(createRequest(null, conditions))
                 .onComplete(ar -> assertTrue(ar.succeeded()));
 
         verify(databaseExecutor).executeInTransaction(argThat(input -> input.stream()
                 .map(PreparedStatementRequest::getSql)
                 .collect(Collectors.toList())
-                .equals(list)));
+                .equals(expectedSqlList)));
     }
 
-    private void test(Long sysCn, String conditions, String expected) {
-        truncateHistoryService.truncateHistory(createRequest(sysCn, conditions));
-        verify(databaseExecutor, times(1)).execute(expected);
+    private void test(Long sysCn, String conditions, String expectedSql) {
+        truncateHistoryService.truncateHistory(createRequest(sysCn, conditions))
+                .onComplete(ar -> assertTrue(ar.succeeded()));
+        verify(databaseExecutor, times(1)).execute(expectedSql);
     }
 
     private TruncateHistoryRequest createRequest(Long sysCn, String conditions) {

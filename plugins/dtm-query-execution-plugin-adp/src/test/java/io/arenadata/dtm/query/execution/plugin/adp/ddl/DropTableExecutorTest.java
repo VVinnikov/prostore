@@ -23,7 +23,7 @@ class DropTableExecutorTest {
     }
 
     @Test
-    void test() {
+    void testDropTable() {
         val expectedSql = "DROP TABLE IF EXISTS <dtm>.<tbl>_actual; DROP TABLE IF EXISTS <dtm>.<tbl>_history; DROP TABLE IF EXISTS <dtm>.<tbl>_staging; "
                 .replace("<dtm>", SCHEMA)
                 .replace("<tbl>", TABLE);

@@ -25,7 +25,7 @@ class DropSchemaExecutorTest {
     }
 
     @Test
-    void test() {
+    void testDropSchema() {
         val expectedSql = String.format("DROP SCHEMA IF EXISTS %s CASCADE", SCHEMA);
 
         dropSchemaExecutor.execute(createDdlRequest())

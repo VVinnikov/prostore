@@ -24,7 +24,7 @@ class CreateSchemaExecutorTest {
     }
 
     @Test
-    void test() {
+    void testCreateSchema() {
         val expectedSql = "CREATE SCHEMA IF NOT EXISTS " + SCHEMA;
 
         createSchemaExecutor.execute(createDdlRequest())

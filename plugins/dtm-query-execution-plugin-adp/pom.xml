@@ -25,7 +25,7 @@
         <!--DTM-->
         <dependency>
             <groupId>io.arenadata.dtm</groupId>
-            <artifactId>dtm-common</artifactId>
+            <artifactId>dtm-kafka-core</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -36,11 +36,6 @@
         <dependency>
             <groupId>io.arenadata.dtm</groupId>
             <artifactId>dtm-calcite-core</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.arenadata.dtm</groupId>
-            <artifactId>dtm-kafka-core</artifactId>
             <version>${project.version}</version>
         </dependency>
 

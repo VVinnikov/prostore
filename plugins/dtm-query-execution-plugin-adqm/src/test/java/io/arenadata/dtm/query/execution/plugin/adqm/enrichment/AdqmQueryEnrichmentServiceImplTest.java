@@ -25,6 +25,7 @@ import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.dto.Enrich
 import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.service.QueryEnrichmentService;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.jackson.DatabindCodec;
+import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +34,7 @@ import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -44,11 +46,14 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @Slf4j
+@ExtendWith(VertxExtension.class)
 class AdqmQueryEnrichmentServiceImplTest {
     private static final int TIMEOUT_SECONDS = 120;
     private static final String ENV_NAME = "local";
@@ -58,14 +63,14 @@ class AdqmQueryEnrichmentServiceImplTest {
     private final String[] expectedSqls;
 
     @SneakyThrows
-    public AdqmQueryEnrichmentServiceImplTest() {
+    public AdqmQueryEnrichmentServiceImplTest(Vertx vertx) {
         val parserConfig = TestUtils.CALCITE_CONFIGURATION.configDdlParser(
                 TestUtils.CALCITE_CONFIGURATION.ddlParserImplFactory());
         val contextProvider = new AdqmCalciteContextProvider(
                 parserConfig,
                 new AdqmCalciteSchemaFactory(new AdqmSchemaFactory()));
 
-        queryParserService = new AdqmCalciteDMLQueryParserService(contextProvider, Vertx.vertx());
+        queryParserService = new AdqmCalciteDMLQueryParserService(contextProvider, vertx);
         val helperTableNamesFactory = new AdqmHelperTableNamesFactoryImpl();
         val queryExtendService = new AdqmDmlQueryExtendService(helperTableNamesFactory);
 
@@ -235,6 +240,26 @@ class AdqmQueryEnrichmentServiceImplTest {
                         "         JOIN (select * from  dml.products) p on c.id = p.category_id\n" +
                         "ORDER by c.id, p.product_name desc"),
                 expectedSqls[13], enrichService);
+    }
+
+    @Test
+    void enrichWithManyInKeyword(VertxTestContext testContext) {
+        // arrange
+        EnrichQueryRequest enrichQueryRequest = prepareRequestDeltaNum(
+                "SELECT account_id FROM shares.accounts WHERE account_id IN (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23)");
+
+        // act assert
+        queryParserService.parse(new QueryParserRequest(enrichQueryRequest.getQuery(), enrichQueryRequest.getSchema()))
+                .compose(parserResponse -> enrichService.enrich(enrichQueryRequest, parserResponse))
+                .onComplete(ar -> testContext.verify(() -> {
+                    if (ar.failed()) {
+                        fail(ar.cause());
+                    }
+
+                    // full of or conditions (not joins)
+                    String expected = "SELECT account_id FROM (SELECT * FROM (SELECT account_id, account_type, sys_op, sys_to, sys_from, sign, sys_close_date FROM local__shares.accounts_actual FINAL WHERE sys_from <= 1 AND (sys_to >= 1 AND (account_id = 1 OR account_id = 2 OR (account_id = 3 OR (account_id = 4 OR account_id = 5)) OR (account_id = 6 OR (account_id = 7 OR account_id = 8) OR (account_id = 9 OR (account_id = 10 OR account_id = 11))) OR (account_id = 12 OR (account_id = 13 OR account_id = 14) OR (account_id = 15 OR (account_id = 16 OR account_id = 17)) OR (account_id = 18 OR (account_id = 19 OR account_id = 20) OR (account_id = 21 OR (account_id = 22 OR account_id = 23))))))) AS t0 WHERE (((SELECT 1 AS r FROM local__shares.accounts_actual WHERE sign < 0 LIMIT 1))) IS NOT NULL UNION ALL SELECT * FROM (SELECT account_id, account_type, sys_op, sys_to, sys_from, sign, sys_close_date FROM local__shares.accounts_actual WHERE sys_from <= 1 AND (sys_to >= 1 AND (account_id = 1 OR account_id = 2 OR (account_id = 3 OR (account_id = 4 OR account_id = 5)) OR (account_id = 6 OR (account_id = 7 OR account_id = 8) OR (account_id = 9 OR (account_id = 10 OR account_id = 11))) OR (account_id = 12 OR (account_id = 13 OR account_id = 14) OR (account_id = 15 OR (account_id = 16 OR account_id = 17)) OR (account_id = 18 OR (account_id = 19 OR account_id = 20) OR (account_id = 21 OR (account_id = 22 OR account_id = 23))))))) AS t6 WHERE (((SELECT 1 AS r FROM local__shares.accounts_actual WHERE sign < 0 LIMIT 1))) IS NULL) AS t11";
+                    assertEquals(expected, ar.result());
+                }).completeNow());
     }
 
     @SneakyThrows

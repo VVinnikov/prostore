@@ -88,7 +88,7 @@ class AdpCheckTableServiceTest {
 
     @BeforeEach
     void setUp() {
-        DatabaseExecutor adbQueryExecutor = mock(AdpQueryExecutor.class);
+        DatabaseExecutor adpQueryExecutor = mock(AdpQueryExecutor.class);
         entity = getEntity();
 
         int fieldsCount = entity.getFields().size();
@@ -101,17 +101,17 @@ class AdpCheckTableServiceTest {
 
         checkTableRequest = new CheckTableRequest(UUID.randomUUID(), "env", entity.getSchema(), entity);
 
-        tablePostFixes.forEach(postFix -> when(adbQueryExecutor.execute(argThat(getPredicate(postFix)::test)))
+        tablePostFixes.forEach(postFix -> when(adpQueryExecutor.execute(argThat(getPredicate(postFix)::test)))
                 .thenReturn(Future.succeededFuture(getResultSet(postFix))));
 
         List<String> queries = tablePostFixes.stream()
                 .map(postFix -> String.format(AdpMetaTableEntityFactory.QUERY_PATTERN,
                         entity.getSchema(), String.format("%s_%s", entity.getName(), postFix)))
                 .collect(Collectors.toList());
-        when(adbQueryExecutor.execute(argThat(arg -> queries.stream().noneMatch(arg::equals))))
+        when(adpQueryExecutor.execute(argThat(arg -> queries.stream().noneMatch(arg::equals))))
                 .thenReturn(Future.succeededFuture(Collections.emptyList()));
         adpCheckTableService = new AdpCheckTableService(new AdpTableEntitiesFactory(),
-                new AdpMetaTableEntityFactory(adbQueryExecutor));
+                new AdpMetaTableEntityFactory(adpQueryExecutor));
     }
 
     @Test

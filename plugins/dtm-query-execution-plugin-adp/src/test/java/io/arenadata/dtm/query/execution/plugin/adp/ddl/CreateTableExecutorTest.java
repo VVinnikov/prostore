@@ -35,11 +35,10 @@ class CreateTableExecutorTest {
 
     @Test
     void testCreateTable() {
-        val expectedSql =
-                "CREATE TABLE datamart.table_actual (id int8, double_col float8, float_col float4, varchar_col varchar(36), boolean_col bool, int_col int8, bigint_col int8, timestamp_col timestamp(6), time_col time(6), date_col date, uuid_col varchar(36), char_col varchar(10), int32_col int4, sys_from int8, sys_to int8, sys_op int4, constraint pk_datamart_table_actual primary key (id, sys_from)); " +
-                "CREATE TABLE datamart.table_history (id int8, double_col float8, float_col float4, varchar_col varchar(36), boolean_col bool, int_col int8, bigint_col int8, timestamp_col timestamp(6), time_col time(6), date_col date, uuid_col varchar(36), char_col varchar(10), int32_col int4, sys_from int8, sys_to int8, sys_op int4, constraint pk_datamart_table_history primary key (id, sys_from)); " +
-                "CREATE TABLE datamart.table_staging (id int8, double_col float8, float_col float4, varchar_col varchar(36), boolean_col bool, int_col int8, bigint_col int8, timestamp_col timestamp(6), time_col time(6), date_col date, uuid_col varchar(36), char_col varchar(10), int32_col int4, sys_from int8, sys_to int8, sys_op int4)";
-        val request= createDdlRequest(createAllTypesEntity());
+        val expectedSql = "CREATE TABLE datamart.table_actual (id int8 NOT NULL, varchar_col varchar(10), char_col varchar(10), bigint_col int8, int_col int8, int32_col int4, double_col float8, float_col float4, date_col date, time_col time(6), timestamp_col timestamp(6), boolean_col bool, uuid_col varchar(36), link_col varchar, sys_from int8, sys_to int8, sys_op int4, constraint pk_datamart_table_actual primary key (id, sys_from)); " +
+                "CREATE TABLE datamart.table_history (id int8 NOT NULL, varchar_col varchar(10), char_col varchar(10), bigint_col int8, int_col int8, int32_col int4, double_col float8, float_col float4, date_col date, time_col time(6), timestamp_col timestamp(6), boolean_col bool, uuid_col varchar(36), link_col varchar, sys_from int8, sys_to int8, sys_op int4, constraint pk_datamart_table_history primary key (id, sys_from)); " +
+                "CREATE TABLE datamart.table_staging (id int8 NOT NULL, varchar_col varchar(10), char_col varchar(10), bigint_col int8, int_col int8, int32_col int4, double_col float8, float_col float4, date_col date, time_col time(6), timestamp_col timestamp(6), boolean_col bool, uuid_col varchar(36), link_col varchar, sys_from int8, sys_to int8, sys_op int4)";
+        val request= createDdlRequest(createAllTypesTable());
 
         createTableExecutor.execute(request)
                 .onComplete(ar -> assertTrue(ar.succeeded()));

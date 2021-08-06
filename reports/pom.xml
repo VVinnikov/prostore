@@ -92,6 +92,12 @@
                 <version>0.8.7</version>
                 <executions>
                     <execution>
+                        <id>jacoco-initialize</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
                         <id>report-aggregate</id>
                         <phase>verify</phase>
                         <goals>

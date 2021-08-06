@@ -148,13 +148,32 @@
                         <configuration>
                             <config>src/main/codegen/config.fmpp</config>
                             <output>${project.build.directory}/generated-sources/fmpp</output>
-                            <!--<templates>${project.build.directory}/codegen/templates</templates>-->
                             <templates>src/main/codegen/templates</templates>
                         </configuration>
                         <id>generate-fmpp-sources</id>
                         <phase>validate</phase>
                         <goals>
                             <goal>generate</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
+                <executions>
+                    <execution>
+                        <id>default-prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
                         </goals>
                     </execution>
                 </executions>

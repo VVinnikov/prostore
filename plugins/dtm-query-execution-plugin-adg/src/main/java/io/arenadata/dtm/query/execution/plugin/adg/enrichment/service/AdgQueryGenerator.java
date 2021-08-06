@@ -59,6 +59,7 @@ public class AdgQueryGenerator implements QueryGenerator {
                                     extendedQuery);
                 } catch (RelConversionException e) {
                     promise.fail(new DtmException("Error in converting rel node", e));
+                    return;
                 }
             }
             SqlNode sqlNodeResult = new NullNotCastableRelToSqlConverter(sqlDialect)

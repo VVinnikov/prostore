@@ -130,6 +130,28 @@ class AdgQueryEnrichmentServiceImplTest {
     }
 
     @Test
+    void testEnrichWithSubquery(VertxTestContext testContext) {
+        // arrange
+        EnrichQueryRequest enrichQueryRequest =
+                prepareRequestDeltaNum("SELECT * FROM shares.accounts as b where b.account_id IN (select c.account_id from shares.transactions as c limit 1)");
+
+
+        // act assert
+        queryParserService.parse(new QueryParserRequest(enrichQueryRequest.getQuery(), enrichQueryRequest.getSchema()))
+                .compose(parserResponse -> enrichService.enrich(enrichQueryRequest, parserResponse))
+                .onComplete(ar -> {
+                    if (ar.failed()) {
+                        testContext.failNow(ar.cause());
+                        return;
+                    }
+
+                    testContext.verify(() -> {
+                        assertEquals("SELECT * FROM (SELECT \"account_id\", \"account_type\" FROM \"local__shares__accounts_history\" WHERE \"sys_from\" <= 1 AND \"sys_to\" >= 1 UNION ALL SELECT \"account_id\", \"account_type\" FROM \"local__shares__accounts_actual\" WHERE \"sys_from\" <= 1) AS \"t3\" WHERE \"account_id\" IN (SELECT \"account_id\" FROM (SELECT \"transaction_id\", \"transaction_date\", \"account_id\", \"amount\" FROM \"local__shares__transactions_history\" WHERE \"sys_from\" <= 1 AND \"sys_to\" >= 1 UNION ALL SELECT \"transaction_id\", \"transaction_date\", \"account_id\", \"amount\" FROM \"local__shares__transactions_actual\" WHERE \"sys_from\" <= 1) AS \"t8\" LIMIT 1)", ar.result());
+                    }).completeNow();
+                });
+    }
+
+    @Test
     void enrichWithMultipleSchemas() {
         enrichWithGrep(prepareRequestMultipleSchema("SELECT a.account_id FROM accounts a " +
                         "JOIN shares_2.accounts aa ON aa.account_id = a.account_id " +

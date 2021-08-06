@@ -32,7 +32,6 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.commons.io.IOUtils;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -233,13 +232,12 @@ class AdqmQueryEnrichmentServiceImplTest {
     }
 
     @Test
-    @Disabled("Needed refactoring AdqmCalciteDmlQueryExtendServiceImpl.processProject")
     void enrichWithSort6() {
         enrich(prepareRequestDeltaNumWithSort("SELECT *\n" +
                         "from dml.categories c\n" +
                         "         JOIN (select * from  dml.products) p on c.id = p.category_id\n" +
                         "ORDER by c.id, p.product_name desc"),
-                expectedSqls[13], enrichService);
+                expectedSqls[14], enrichService);
     }
 
     @Test
@@ -257,7 +255,27 @@ class AdqmQueryEnrichmentServiceImplTest {
                     }
 
                     // full of or conditions (not joins)
-                    String expected = "SELECT account_id FROM (SELECT * FROM (SELECT account_id, account_type, sys_op, sys_to, sys_from, sign, sys_close_date FROM local__shares.accounts_actual FINAL WHERE sys_from <= 1 AND (sys_to >= 1 AND (account_id = 1 OR account_id = 2 OR (account_id = 3 OR (account_id = 4 OR account_id = 5)) OR (account_id = 6 OR (account_id = 7 OR account_id = 8) OR (account_id = 9 OR (account_id = 10 OR account_id = 11))) OR (account_id = 12 OR (account_id = 13 OR account_id = 14) OR (account_id = 15 OR (account_id = 16 OR account_id = 17)) OR (account_id = 18 OR (account_id = 19 OR account_id = 20) OR (account_id = 21 OR (account_id = 22 OR account_id = 23))))))) AS t0 WHERE (((SELECT 1 AS r FROM local__shares.accounts_actual WHERE sign < 0 LIMIT 1))) IS NOT NULL UNION ALL SELECT * FROM (SELECT account_id, account_type, sys_op, sys_to, sys_from, sign, sys_close_date FROM local__shares.accounts_actual WHERE sys_from <= 1 AND (sys_to >= 1 AND (account_id = 1 OR account_id = 2 OR (account_id = 3 OR (account_id = 4 OR account_id = 5)) OR (account_id = 6 OR (account_id = 7 OR account_id = 8) OR (account_id = 9 OR (account_id = 10 OR account_id = 11))) OR (account_id = 12 OR (account_id = 13 OR account_id = 14) OR (account_id = 15 OR (account_id = 16 OR account_id = 17)) OR (account_id = 18 OR (account_id = 19 OR account_id = 20) OR (account_id = 21 OR (account_id = 22 OR account_id = 23))))))) AS t6 WHERE (((SELECT 1 AS r FROM local__shares.accounts_actual WHERE sign < 0 LIMIT 1))) IS NULL) AS t11";
+                    String expected = "SELECT * FROM (SELECT account_id FROM local__shares.accounts_actual FINAL WHERE sys_from <= 1 AND (sys_to >= 1 AND (account_id = 1 OR account_id = 2 OR (account_id = 3 OR (account_id = 4 OR account_id = 5)) OR (account_id = 6 OR (account_id = 7 OR account_id = 8) OR (account_id = 9 OR (account_id = 10 OR account_id = 11))) OR (account_id = 12 OR (account_id = 13 OR account_id = 14) OR (account_id = 15 OR (account_id = 16 OR account_id = 17)) OR (account_id = 18 OR (account_id = 19 OR account_id = 20) OR (account_id = 21 OR (account_id = 22 OR account_id = 23))))))) AS t0 WHERE (((SELECT 1 AS r FROM local__shares.accounts_actual WHERE sign < 0 LIMIT 1))) IS NOT NULL UNION ALL SELECT * FROM (SELECT account_id FROM local__shares.accounts_actual WHERE sys_from <= 1 AND (sys_to >= 1 AND (account_id = 1 OR account_id = 2 OR (account_id = 3 OR (account_id = 4 OR account_id = 5)) OR (account_id = 6 OR (account_id = 7 OR account_id = 8) OR (account_id = 9 OR (account_id = 10 OR account_id = 11))) OR (account_id = 12 OR (account_id = 13 OR account_id = 14) OR (account_id = 15 OR (account_id = 16 OR account_id = 17)) OR (account_id = 18 OR (account_id = 19 OR account_id = 20) OR (account_id = 21 OR (account_id = 22 OR account_id = 23))))))) AS t6 WHERE (((SELECT 1 AS r FROM local__shares.accounts_actual WHERE sign < 0 LIMIT 1))) IS NULL";
+                    assertEquals(expected, ar.result());
+                }).completeNow());
+    }
+
+    @Test
+    void enrichWithSubquery(VertxTestContext testContext) {
+        // arrange
+        EnrichQueryRequest enrichQueryRequest = prepareRequestDeltaNum(
+                "SELECT * FROM shares.accounts as b where b.account_id IN (select c.account_id from shares.transactions as c limit 1)");
+
+        // act assert
+        queryParserService.parse(new QueryParserRequest(enrichQueryRequest.getQuery(), enrichQueryRequest.getSchema()))
+                .compose(parserResponse -> enrichService.enrich(enrichQueryRequest, parserResponse))
+                .onComplete(ar -> testContext.verify(() -> {
+                    if (ar.failed()) {
+                        fail(ar.cause());
+                    }
+
+                    // full of or conditions (not joins)
+                    String expected = "SELECT account_id, account_type FROM (SELECT * FROM (SELECT * FROM local__shares.accounts_actual FINAL WHERE sys_from <= 1 AND (sys_to >= 1 AND account_id IN (SELECT account_id FROM local__shares.transactions_actual_shard FINAL WHERE sys_from <= 1 AND sys_to >= 1 LIMIT 1))) AS t2 WHERE (((SELECT 1 AS r FROM local__shares.transactions_actual_shard WHERE sign < 0 LIMIT 1))) IS NOT NULL OR (((SELECT 1 AS r FROM local__shares.accounts_actual WHERE sign < 0 LIMIT 1))) IS NOT NULL UNION ALL SELECT * FROM (SELECT * FROM local__shares.accounts_actual WHERE sys_from <= 1 AND (sys_to >= 1 AND account_id IN (SELECT account_id FROM local__shares.transactions_actual_shard WHERE sys_from <= 1 AND sys_to >= 1 LIMIT 1))) AS t13 WHERE (((SELECT 1 AS r FROM local__shares.transactions_actual_shard WHERE sign < 0 LIMIT 1))) IS NULL AND (((SELECT 1 AS r FROM local__shares.accounts_actual WHERE sign < 0 LIMIT 1))) IS NULL) AS t21";
                     assertEquals(expected, ar.result());
                 }).completeNow());
     }
@@ -281,7 +299,7 @@ class AdqmQueryEnrichmentServiceImplTest {
                     }
                 });
         assertThat(testContext.awaitCompletion(TIMEOUT_SECONDS, TimeUnit.SECONDS)).isTrue();
-        assertThat(expectedSql.trim()).isEqualToNormalizingNewlines(actual[0].trim());
+        assertThat(actual[0].trim()).isEqualToNormalizingNewlines(expectedSql.trim());
     }
 
     private EnrichQueryRequest prepareRequestDeltaNumWithSort(String sql) {

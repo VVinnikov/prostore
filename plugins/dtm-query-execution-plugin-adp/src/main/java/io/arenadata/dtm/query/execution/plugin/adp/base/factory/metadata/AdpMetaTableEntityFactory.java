@@ -51,9 +51,9 @@ public class AdpMetaTableEntityFactory implements MetaTableEntityFactory<AdpTabl
     public Future<Optional<AdpTableEntity>> create(String envName, String schema, String table) {
         String query = String.format(QUERY_PATTERN, schema, table);
         return adpQueryExecutor.execute(query)
-                .compose(result -> Future.succeededFuture(result.isEmpty()
+                .map(result -> result.isEmpty()
                         ? Optional.empty()
-                        : Optional.of(transformToAdpEntity(result))));
+                        : Optional.of(transformToAdpEntity(result)));
     }
 
     private AdpTableEntity transformToAdpEntity(List<Map<String, Object>> mapList) {
@@ -80,19 +80,15 @@ public class AdpMetaTableEntityFactory implements MetaTableEntityFactory<AdpTabl
         String precision = Optional.ofNullable(map.get(DATETIME_PRECISION))
                 .map(val -> String.format("(%s)", val))
                 .orElse("");
-        String result;
         switch (type) {
             case "varchar":
             case "char":
-                result = String.format("%s%s", type, size);
-                break;
+                return String.format("%s%s", type, size);
             case "time":
             case "timestamp":
-                result = String.format("%s%s", type, precision);
-                break;
+                return String.format("%s%s", type, precision);
             default :
-                result = type;
+                return type;
         }
-        return result;
     }
 }

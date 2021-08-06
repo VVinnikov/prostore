@@ -12,6 +12,11 @@ import java.util.stream.Collectors;
 
 public class AdpCheckDataQueryFactory {
 
+    private AdpCheckDataQueryFactory() {
+    }
+
+    public static final String COUNT_COLUMN_NAME = "cnt";
+    public static final String HASH_SUM_COLUMN_NAME = "hash_sum";
     private static final String CHECK_DATA_BY_COUNT_TEMPLATE = "SELECT count(1) as %s FROM " +
             "(SELECT 1 " +
             "FROM %s.%s_%s " +
@@ -24,9 +29,9 @@ public class AdpCheckDataQueryFactory {
                     "  FROM %s.%s_%s \n" +
                     "  WHERE (sys_to = %d AND sys_op = 1) OR sys_from = %d) AS tmp";
 
-    public static String createCheckDataByCountQuery(CheckDataByCountRequest request, String resultColumnName) {
+    public static String createCheckDataByCountQuery(CheckDataByCountRequest request) {
         return String.format(CHECK_DATA_BY_COUNT_TEMPLATE,
-                resultColumnName,
+                COUNT_COLUMN_NAME,
                 request.getEntity().getSchema(),
                 request.getEntity().getName(),
                 Constants.ACTUAL_TABLE,
@@ -34,7 +39,7 @@ public class AdpCheckDataQueryFactory {
                 request.getSysCn());
     }
 
-    public static String createCheckDataByHashInt32Query(CheckDataByHashInt32Request request, String resultColumnName) {
+    public static String createCheckDataByHashInt32Query(CheckDataByHashInt32Request request) {
         Map<String, EntityField> fields = request.getEntity().getFields().stream()
                 .collect(Collectors.toMap(EntityField::getName, Function.identity()));
         val fieldsConcatenationList = request.getColumns().stream()
@@ -47,7 +52,7 @@ public class AdpCheckDataQueryFactory {
         val sysCn = request.getSysCn();
         return String.format(CHECK_DATA_BY_HASH_TEMPLATE,
                 fieldsConcatenationList,
-                resultColumnName,
+                HASH_SUM_COLUMN_NAME,
                 columnsList,
                 datamart,
                 table,

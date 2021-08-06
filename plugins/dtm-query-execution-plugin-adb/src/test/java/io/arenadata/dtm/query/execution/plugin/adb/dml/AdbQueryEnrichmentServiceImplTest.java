@@ -114,6 +114,28 @@ class AdbQueryEnrichmentServiceImplTest {
     }
 
     @Test
+    void testEnrichWithSubquery(VertxTestContext testContext) {
+        // arrange
+        EnrichQueryRequest enrichQueryRequest =
+                prepareRequestDeltaNum("SELECT * FROM shares.accounts as b where b.account_id IN (select c.account_id from shares.transactions as c limit 1)");
+
+
+        // act assert
+        queryParserService.parse(new QueryParserRequest(enrichQueryRequest.getQuery(), enrichQueryRequest.getSchema()))
+                .compose(parserResponse -> adbQueryEnrichmentService.enrich(enrichQueryRequest, parserResponse))
+                .onComplete(ar -> {
+                    if (ar.failed()) {
+                        testContext.failNow(ar.cause());
+                        return;
+                    }
+
+                    testContext.verify(() -> {
+                        assertEquals("SELECT * FROM (SELECT account_id, account_type FROM shares.accounts_actual WHERE sys_from <= 1 AND COALESCE(sys_to, 9223372036854775807) >= 1) AS t0 WHERE account_id IN (SELECT account_id FROM shares.transactions_actual WHERE sys_from <= 1 AND COALESCE(sys_to, 9223372036854775807) >= 1 LIMIT 1)", ar.result());
+                    }).completeNow();
+                });
+    }
+
+    @Test
     void testEnrichWithCountAndGroupByLimit(VertxTestContext testContext) {
         // arrange
         EnrichQueryRequest enrichQueryRequest =

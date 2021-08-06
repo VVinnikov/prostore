@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service("adqmQueryGenerator")
@@ -88,7 +89,9 @@ public class AdqmQueryGenerator implements QueryGenerator {
                 })
                 .forEach(sqlTreeNode -> {
                     SqlIdentifier identifier = sqlTreeNode.getNode();
-                    val preparedAlias = identifier.getSimple().replace("$", "__");
+                    val preparedAlias = identifier.names.stream()
+                            .map(s -> s.replace("$", "__"))
+                            .collect(Collectors.toList());
                     sqlTreeNode.getSqlNodeSetter().accept(new SqlIdentifier(preparedAlias, identifier.getParserPosition()));
                 });
     }

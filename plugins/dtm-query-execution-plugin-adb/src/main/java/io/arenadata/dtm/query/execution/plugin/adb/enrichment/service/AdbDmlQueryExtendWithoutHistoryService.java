@@ -2,15 +2,18 @@ package io.arenadata.dtm.query.execution.plugin.adb.enrichment.service;
 
 import io.arenadata.dtm.common.delta.DeltaInformation;
 import io.arenadata.dtm.common.delta.DeltaType;
+import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.dto.QueryGeneratorContext;
 import io.arenadata.dtm.query.execution.plugin.api.service.enrichment.service.QueryExtendService;
-import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexSubQuery;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
 
@@ -35,7 +38,7 @@ public class AdbDmlQueryExtendWithoutHistoryService implements QueryExtendServic
         return relNode;
     }
 
-    RelNode iterateTree(QueryGeneratorContext context, RelNode node) {
+    private RelNode iterateTree(QueryGeneratorContext context, RelNode node) {
         val deltaIterator = context.getDeltaIterator();
         val relBuilder = context.getRelBuilder();
         val newInput = new ArrayList<RelNode>();
@@ -50,12 +53,41 @@ public class AdbDmlQueryExtendWithoutHistoryService implements QueryExtendServic
             }
             return relBuilder.build();
         }
+
+        if (node instanceof LogicalFilter) {
+            val logicalFilter = (LogicalFilter) node;
+            val condition = iterateRexNode(context, logicalFilter.getCondition());
+            node.getInputs().forEach(input -> newInput.add(iterateTree(context, input)));
+            relBuilder.push(logicalFilter.copy(node.getTraitSet(), newInput.get(0), condition));
+            return relBuilder.build();
+        }
+
         node.getInputs().forEach(input -> newInput.add(iterateTree(context, input)));
         relBuilder.push(node.copy(node.getTraitSet(), newInput));
         return relBuilder.build();
     }
 
-    RelNode insertModifiedTableScan(RelNode tableScan, DeltaInformation deltaInfo) {
+    private RexNode iterateRexNode(QueryGeneratorContext context, RexNode condition) {
+        if (condition instanceof RexSubQuery) {
+            val rexSubQuery = (RexSubQuery) condition;
+            val relNode = iterateTree(context, rexSubQuery.rel);
+            return rexSubQuery.clone(relNode);
+        }
+
+        if (condition instanceof RexCall) {
+            val rexCall = (RexCall) condition;
+            val newOperands = new ArrayList<RexNode>();
+            for (RexNode operand : rexCall.getOperands()) {
+                newOperands.add(iterateRexNode(context, operand));
+            }
+
+            return rexCall.clone(rexCall.type, newOperands);
+        }
+
+        return condition;
+    }
+
+    private RelNode insertModifiedTableScan(RelNode tableScan, DeltaInformation deltaInfo) {
         val relBuilder = RelBuilder
                 .proto(tableScan.getCluster().getPlanner().getContext())
                 .create(tableScan.getCluster(), tableScan.getTable().getRelOptSchema());

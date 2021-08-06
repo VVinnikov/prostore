@@ -11,7 +11,10 @@ import lombok.val;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.logical.LogicalFilter;
+import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexSubQuery;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
 import org.springframework.stereotype.Service;
@@ -40,22 +43,54 @@ public class AdgDmlQueryExtendService implements QueryExtendService {
         return relNode;
     }
 
-    RelNode iterateTree(QueryGeneratorContext context, RelNode node) {
-        List<RelNode> newInput = new ArrayList<>();
+    private RelNode iterateTree(QueryGeneratorContext context, RelNode node) {
+        val newInput = new ArrayList<RelNode>();
+        val relBuilder = context.getRelBuilder();
         if (node.getInputs() == null || node.getInputs().isEmpty()) {
             if (node instanceof TableScan) {
-                context.getRelBuilder().push(insertModifiedTableScan(context, node, context.getDeltaIterator().next()));
+                relBuilder.push(insertModifiedTableScan(context, node, context.getDeltaIterator().next()));
+            } else {
+                relBuilder.push(node);
             }
-            return context.getRelBuilder().build();
+            return relBuilder.build();
         }
+
+        if (node instanceof LogicalFilter) {
+            val logicalFilter = (LogicalFilter) node;
+            val condition = iterateRexNode(context, logicalFilter.getCondition());
+            node.getInputs().forEach(input -> newInput.add(iterateTree(context, input)));
+            relBuilder.push(logicalFilter.copy(node.getTraitSet(), newInput.get(0), condition));
+            return relBuilder.build();
+        }
+
         node.getInputs().forEach(input -> {
             newInput.add(iterateTree(context, input));
         });
-        context.getRelBuilder().push(node.copy(node.getTraitSet(), newInput));
-        return context.getRelBuilder().build();
+        relBuilder.push(node.copy(node.getTraitSet(), newInput));
+        return relBuilder.build();
     }
 
-    RelNode insertModifiedTableScan(QueryGeneratorContext context, RelNode tableScan, DeltaInformation deltaInfo) {
+    private RexNode iterateRexNode(QueryGeneratorContext context, RexNode condition) {
+        if (condition instanceof RexSubQuery) {
+            val rexSubQuery = (RexSubQuery) condition;
+            val relNode = iterateTree(context, rexSubQuery.rel);
+            return rexSubQuery.clone(relNode);
+        }
+
+        if (condition instanceof RexCall) {
+            val rexCall = (RexCall) condition;
+            val newOperands = new ArrayList<RexNode>();
+            for (RexNode operand : rexCall.getOperands()) {
+                newOperands.add(iterateRexNode(context, operand));
+            }
+
+            return rexCall.clone(rexCall.type, newOperands);
+        }
+
+        return condition;
+    }
+
+    private RelNode insertModifiedTableScan(QueryGeneratorContext context, RelNode tableScan, DeltaInformation deltaInfo) {
         val relBuilder = RelBuilder.proto(tableScan.getCluster().getPlanner().getContext())
             .create(tableScan.getCluster(),
                 ((CalciteCatalogReader) context.getRelBuilder().getRelOptSchema())

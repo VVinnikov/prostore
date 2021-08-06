@@ -60,6 +60,7 @@ public class AdpQueryGenerator implements QueryGenerator {
                                     extendedQuery);
                 } catch (Exception e) {
                     promise.fail(new DtmException("Error in converting rel node", e));
+                    return;
                 }
             }
             val sqlNodeResult = new NullNotCastableRelToSqlConverter(sqlDialect).visitChild(0, resultRelNode).asStatement();

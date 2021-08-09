@@ -16,7 +16,7 @@ class AdpTransferDataSqlFactoryTest {
     private final AdpTransferDataSqlFactory sqlFactory = new AdpTransferDataSqlFactory();
 
     @Test
-    public void shouldBeCorrectCloseVersionOfRecordsSql() {
+    void shouldBeCorrectCloseVersionOfRecordsSql() {
         // act
         String closeVersionOfRecordsSql = sqlFactory.getCloseVersionOfRecordsSql(DATAMART, TABLE_NAME, PRIMARY_KEYS, SYS_CN);
 
@@ -36,7 +36,7 @@ class AdpTransferDataSqlFactoryTest {
     }
 
     @Test
-    public void shouldBeCorrectUploadHotRecordsSql() {
+    void shouldBeCorrectUploadHotRecordsSql() {
         // act
         String closeVersionOfRecordsSql = sqlFactory.getUploadHotRecordsSql(DATAMART, TABLE_NAME, ALL_FIELDS, PRIMARY_KEYS, SYS_CN);
 
@@ -50,7 +50,7 @@ class AdpTransferDataSqlFactoryTest {
     }
 
     @Test
-    public void shouldBeCorrectTruncateSql() {
+    void shouldBeCorrectTruncateSql() {
         // act
         String closeVersionOfRecordsSql = sqlFactory.getTruncateSql(DATAMART, TABLE_NAME);
 

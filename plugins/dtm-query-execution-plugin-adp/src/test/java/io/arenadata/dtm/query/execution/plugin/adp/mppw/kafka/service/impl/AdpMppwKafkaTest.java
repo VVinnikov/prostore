@@ -14,6 +14,8 @@ import io.arenadata.dtm.query.execution.plugin.adp.connector.dto.AdpConnectorMpp
 import io.arenadata.dtm.query.execution.plugin.adp.connector.dto.AdpConnectorMppwStopRequest;
 import io.arenadata.dtm.query.execution.plugin.adp.mppw.factory.AdpTransferDataSqlFactory;
 import io.arenadata.dtm.query.execution.plugin.adp.mppw.transfer.AdpTransferDataService;
+import io.arenadata.dtm.query.execution.plugin.api.exception.MppwDatasourceException;
+import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.UploadExternalEntityMetadata;
 import io.vertx.core.Future;
@@ -33,6 +35,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -88,45 +91,32 @@ class AdpMppwKafkaTest {
     void shouldSuccessfullyStartLoad(VertxTestContext vertxTestContext) {
         // arrange
         val requestId = UUID.randomUUID();
-        val request = new MppwKafkaRequest(requestId, ENV, DATAMART, true,
-                createEntity(), SYS_CN, TABLE_NAME, new UploadExternalEntityMetadata("name", "path",
-                ExternalTableFormat.AVRO, SCHEMA, 1000),
-                Arrays.asList(new KafkaBrokerInfo(BROKER_HOST, BROKER_PORT)), TOPIC, Arrays.asList("id"));
+        val request = getRequest(requestId,true, createEntity(), ExternalTableFormat.AVRO, SCHEMA, Collections.singletonList("id"));
 
         // act
         Future<QueryResult> result = adpMppwKafkaExecutor.execute(request);
 
         // assert
-        result.onComplete(ar -> {
-            if (ar.failed()) {
-                vertxTestContext.failNow(ar.cause());
-                return;
-            }
-
-            vertxTestContext.verify(() -> {
-                verify(adpConnectorClient).startMppw(startRequestCaptor.capture());
-                val capture = startRequestCaptor.getValue();
-                assertEquals(requestId.toString(), capture.getRequestId());
-                assertEquals(DATAMART, capture.getDatamart());
-                assertEquals(TABLE_NAME + "_staging", capture.getTableName());
-                assertEquals(1, capture.getKafkaBrokers().size());
-                assertEquals(BROKER_HOST + ":" + BROKER_PORT, capture.getKafkaBrokers().get(0).getAddress());
-                assertEquals(TOPIC, capture.getKafkaTopic());
-                assertEquals(CONSUMER_GROUP, capture.getConsumerGroup());
-                assertEquals(ExternalTableFormat.AVRO.getName(), capture.getFormat());
-                assertEquals(SCHEMA, capture.getSchema().toString());
-            }).completeNow();
-        });
-    }
+        result.onComplete(vertxTestContext.succeeding(ar ->
+                vertxTestContext.verify(() -> {
+                    verify(adpConnectorClient).startMppw(startRequestCaptor.capture());
+                    val capture = startRequestCaptor.getValue();
+                    assertEquals(requestId.toString(), capture.getRequestId());
+                    assertEquals(DATAMART, capture.getDatamart());
+                    assertEquals(TABLE_NAME + "_staging", capture.getTableName());
+                    assertEquals(1, capture.getKafkaBrokers().size());
+                    assertEquals(BROKER_HOST + ":" + BROKER_PORT, capture.getKafkaBrokers().get(0).getAddress());
+                    assertEquals(TOPIC, capture.getKafkaTopic());
+                    assertEquals(CONSUMER_GROUP, capture.getConsumerGroup());
+                    assertEquals(ExternalTableFormat.AVRO.getName(), capture.getFormat());
+                    assertEquals(SCHEMA, capture.getSchema().toString());
+                }).completeNow()));
+}
 
     @Test
     void shouldFailStartWhenConnectorFailed(VertxTestContext vertxTestContext) {
         // arrange
-        val requestId = UUID.randomUUID();
-        val request = new MppwKafkaRequest(requestId, ENV, DATAMART, true,
-                createEntity(), SYS_CN, TABLE_NAME, new UploadExternalEntityMetadata("name", "path",
-                ExternalTableFormat.AVRO, SCHEMA, 1000),
-                Arrays.asList(new KafkaBrokerInfo(BROKER_HOST, BROKER_PORT)), TOPIC, Arrays.asList("id"));
+        val request = getRequest(UUID.randomUUID(),true, createEntity(), ExternalTableFormat.AVRO, SCHEMA, Collections.singletonList("id"));
 
         reset(adpConnectorClient);
         when(adpConnectorClient.startMppw(Mockito.any())).thenReturn(Future.failedFuture(new RuntimeException("Exception")));
@@ -135,99 +125,68 @@ class AdpMppwKafkaTest {
         Future<QueryResult> result = adpMppwKafkaExecutor.execute(request);
 
         // assert
-        result.onComplete(ar -> {
-            if (ar.succeeded()) {
-                vertxTestContext.failNow(new AssertionError("Unexpected success"));
-                return;
-            }
-
-            vertxTestContext.verify(() -> {
-                assertSame(RuntimeException.class, ar.cause().getClass());
-            }).completeNow();
-        });
+        result.onComplete(vertxTestContext.failing(error ->
+                vertxTestContext.verify(() -> assertSame(RuntimeException.class, error.getClass()))
+                        .completeNow()));
     }
 
     @Test
     void shouldFailStartWhenWrongSchema(VertxTestContext vertxTestContext) {
         // arrange
-        val requestId = UUID.randomUUID();
-        val request = new MppwKafkaRequest(requestId, ENV, DATAMART, true,
-                createEntity(), SYS_CN, TABLE_NAME, new UploadExternalEntityMetadata("name", "path",
-                ExternalTableFormat.AVRO, "{}", 1000),
-                Arrays.asList(new KafkaBrokerInfo(BROKER_HOST, BROKER_PORT)), TOPIC, Arrays.asList("id"));
+        val request = getRequest(UUID.randomUUID(), true, createEntity(), ExternalTableFormat.AVRO, "{}", Collections.singletonList("id"));
 
         // act
         Future<QueryResult> result = adpMppwKafkaExecutor.execute(request);
 
         // assert
-        result.onComplete(ar -> {
-            if (ar.succeeded()) {
-                vertxTestContext.failNow(new AssertionError("Unexpected success"));
-                return;
-            }
-
-            vertxTestContext.verify(() -> {
-                assertSame(SchemaParseException.class, ar.cause().getClass());
-            }).completeNow();
-        });
+        result.onComplete(vertxTestContext.failing(error ->
+                vertxTestContext.verify(() -> assertSame(SchemaParseException.class, error.getClass()))
+                        .completeNow()));
     }
 
     @Test
     void shouldSuccessfullyStopLoad(VertxTestContext vertxTestContext) {
         // arrange
         UUID requestId = UUID.randomUUID();
-        val request = new MppwKafkaRequest(requestId, ENV, DATAMART, false,
-                createEntity(), SYS_CN, TABLE_NAME, new UploadExternalEntityMetadata("name", "path",
-                ExternalTableFormat.AVRO, SCHEMA, 1000),
-                Arrays.asList(new KafkaBrokerInfo(BROKER_HOST, BROKER_PORT)), TOPIC, Arrays.asList("id"));
+        val request = getRequest(requestId, false, createEntity(), ExternalTableFormat.AVRO, SCHEMA, Collections.singletonList("id"));
 
         // act
         Future<QueryResult> result = adpMppwKafkaExecutor.execute(request);
 
         // assert
-        result.onComplete(ar -> {
-            if (ar.failed()) {
-                vertxTestContext.failNow(ar.cause());
-                return;
-            }
+        result.onComplete(vertxTestContext.succeeding(ar ->
+                vertxTestContext.verify(() -> {
+                    verify(adpConnectorClient).stopMppw(stopRequestCaptor.capture());
+                    val capture = stopRequestCaptor.getValue();
+                    assertEquals(requestId.toString(), capture.getRequestId());
+                    assertEquals(TOPIC, capture.getKafkaTopic());
 
-            vertxTestContext.verify(() -> {
-                verify(adpConnectorClient).stopMppw(stopRequestCaptor.capture());
-                val capture = stopRequestCaptor.getValue();
-                assertEquals(requestId.toString(), capture.getRequestId());
-                assertEquals(TOPIC, capture.getKafkaTopic());
-
-                verify(databaseExecutor).executeUpdate(updateRequestCaptor.capture());
-                val value = updateRequestCaptor.getValue();
-                Assertions.assertThat(value).isEqualToNormalizingNewlines("UPDATE DATAMART.table_actual actual\n" +
-                        "SET \n" +
-                        "  sys_to = 9,\n" +
-                        "  sys_op = staging.sys_op\n" +
-                        "FROM (\n" +
-                        "  SELECT id, MAX(sys_op) as sys_op\n" +
-                        "  FROM DATAMART.table_staging\n" +
-                        "  GROUP BY id\n" +
-                        "    ) staging\n" +
-                        "WHERE actual.id = staging.id \n" +
-                        "  AND actual.sys_from < 10\n" +
-                        "  AND actual.sys_to IS NULL;INSERT INTO DATAMART.table_actual (id, surname, age, sys_from, sys_op)\n" +
-                        "  SELECT DISTINCT ON (staging.id) staging.id, staging.surname, staging.age, 10 AS sys_from, 0 AS sys_op \n" +
-                        "  FROM DATAMART.table_staging staging\n" +
-                        "    LEFT JOIN DATAMART.table_actual actual \n" +
-                        "    ON actual.id = staging.id AND actual.sys_from = 10\n" +
-                        "  WHERE actual.sys_from IS NULL AND staging.sys_op <> 1;TRUNCATE DATAMART.table_staging;");
-            }).completeNow();
-        });
+                    verify(databaseExecutor).executeUpdate(updateRequestCaptor.capture());
+                    val value = updateRequestCaptor.getValue();
+                    Assertions.assertThat(value).isEqualToNormalizingNewlines("UPDATE DATAMART.table_actual actual\n" +
+                            "SET \n" +
+                            "  sys_to = 9,\n" +
+                            "  sys_op = staging.sys_op\n" +
+                            "FROM (\n" +
+                            "  SELECT id, MAX(sys_op) as sys_op\n" +
+                            "  FROM DATAMART.table_staging\n" +
+                            "  GROUP BY id\n" +
+                            "    ) staging\n" +
+                            "WHERE actual.id = staging.id \n" +
+                            "  AND actual.sys_from < 10\n" +
+                            "  AND actual.sys_to IS NULL;INSERT INTO DATAMART.table_actual (id, surname, age, sys_from, sys_op)\n" +
+                            "  SELECT DISTINCT ON (staging.id) staging.id, staging.surname, staging.age, 10 AS sys_from, 0 AS sys_op \n" +
+                            "  FROM DATAMART.table_staging staging\n" +
+                            "    LEFT JOIN DATAMART.table_actual actual \n" +
+                            "    ON actual.id = staging.id AND actual.sys_from = 10\n" +
+                            "  WHERE actual.sys_from IS NULL AND staging.sys_op <> 1;TRUNCATE DATAMART.table_staging;");
+                }).completeNow()));
     }
 
     @Test
     void shouldFailStopWhenConnectorFailed(VertxTestContext vertxTestContext) {
         // arrange
-        UUID requestId = UUID.randomUUID();
-        val request = new MppwKafkaRequest(requestId, ENV, DATAMART, false,
-                createEntity(), SYS_CN, TABLE_NAME, new UploadExternalEntityMetadata("name", "path",
-                ExternalTableFormat.AVRO, SCHEMA, 1000),
-                Arrays.asList(new KafkaBrokerInfo(BROKER_HOST, BROKER_PORT)), TOPIC, Arrays.asList("id"));
+        val request = getRequest(UUID.randomUUID(), false, createEntity(), ExternalTableFormat.AVRO, SCHEMA, Collections.singletonList("id"));
         reset(adpConnectorClient);
         when(adpConnectorClient.stopMppw(Mockito.any())).thenReturn(Future.failedFuture(new RuntimeException("Exception")));
 
@@ -235,26 +194,15 @@ class AdpMppwKafkaTest {
         Future<QueryResult> result = adpMppwKafkaExecutor.execute(request);
 
         // assert
-        result.onComplete(ar -> {
-            if (ar.succeeded()) {
-                vertxTestContext.failNow(new AssertionError("Unexpected success"));
-                return;
-            }
-
-            vertxTestContext.verify(() -> {
-                assertSame(RuntimeException.class, ar.cause().getClass());
-            }).completeNow();
-        });
+        result.onComplete(vertxTestContext.failing(error ->
+                vertxTestContext.verify(() -> assertSame(RuntimeException.class, error.getClass()))
+                        .completeNow()));
     }
 
     @Test
     void shouldFailStopWhenDatabaseFailed(VertxTestContext vertxTestContext) {
         // arrange
-        UUID requestId = UUID.randomUUID();
-        val request = new MppwKafkaRequest(requestId, ENV, DATAMART, false,
-                createEntity(), SYS_CN, TABLE_NAME, new UploadExternalEntityMetadata("name", "path",
-                ExternalTableFormat.AVRO, SCHEMA, 1000),
-                Arrays.asList(new KafkaBrokerInfo(BROKER_HOST, BROKER_PORT)), TOPIC, Arrays.asList("id"));
+        val request = getRequest(UUID.randomUUID(), false, createEntity(), ExternalTableFormat.AVRO, SCHEMA, Collections.singletonList("id"));
         reset(databaseExecutor);
         when(databaseExecutor.executeUpdate(Mockito.any())).thenReturn(Future.failedFuture(new RuntimeException("Exception")));
 
@@ -262,70 +210,61 @@ class AdpMppwKafkaTest {
         Future<QueryResult> result = adpMppwKafkaExecutor.execute(request);
 
         // assert
-        result.onComplete(ar -> {
-            if (ar.succeeded()) {
-                vertxTestContext.failNow(new AssertionError("Unexpected success"));
-                return;
-            }
-
-            vertxTestContext.verify(() -> {
-                assertSame(RuntimeException.class, ar.cause().getClass());
-            }).completeNow();
-        });
+        result.onComplete(vertxTestContext.failing(error ->
+                vertxTestContext.verify(() -> assertSame(RuntimeException.class, error.getClass()))
+                        .completeNow()));
     }
 
     @Test
     void shouldFailStopWhenNoFieldsInEntity(VertxTestContext vertxTestContext) {
         // arrange
-        UUID requestId = UUID.randomUUID();
-
         Entity entity = createEntity();
         entity.setFields(Collections.emptyList());
-        val request = new MppwKafkaRequest(requestId, ENV, DATAMART, false,
-                entity, SYS_CN, TABLE_NAME, new UploadExternalEntityMetadata("name", "path",
-                ExternalTableFormat.AVRO, SCHEMA, 1000),
-                Arrays.asList(new KafkaBrokerInfo(BROKER_HOST, BROKER_PORT)), TOPIC, Arrays.asList("id"));
+        val request = getRequest(UUID.randomUUID(), false, entity, ExternalTableFormat.AVRO, SCHEMA, Collections.singletonList("id"));
 
         // act
         Future<QueryResult> result = adpMppwKafkaExecutor.execute(request);
 
         // assert
-        result.onComplete(ar -> {
-            if (ar.succeeded()) {
-                vertxTestContext.failNow(new AssertionError("Unexpected success"));
-                return;
-            }
-
-            vertxTestContext.verify(() -> {
-                assertSame(DtmException.class, ar.cause().getClass());
-            }).completeNow();
-        });
+        result.onComplete(vertxTestContext.failing(error ->
+                vertxTestContext.verify(() -> assertSame(DtmException.class, error.getClass()))
+                        .completeNow()));
     }
 
     @Test
     void shouldFailStopWhenNoPrimaryKeys(VertxTestContext vertxTestContext) {
         // arrange
-        UUID requestId = UUID.randomUUID();
-
-        val request = new MppwKafkaRequest(requestId, ENV, DATAMART, false,
-                createEntity(), SYS_CN, TABLE_NAME, new UploadExternalEntityMetadata("name", "path",
-                ExternalTableFormat.AVRO, SCHEMA, 1000),
-                Arrays.asList(new KafkaBrokerInfo(BROKER_HOST, BROKER_PORT)), TOPIC, Collections.emptyList());
+        val request = getRequest(UUID.randomUUID(), false, createEntity(), ExternalTableFormat.AVRO, SCHEMA, Collections.emptyList());
 
         // act
         Future<QueryResult> result = adpMppwKafkaExecutor.execute(request);
 
         // assert
-        result.onComplete(ar -> {
-            if (ar.succeeded()) {
-                vertxTestContext.failNow(new AssertionError("Unexpected success"));
-                return;
-            }
+        result.onComplete(vertxTestContext.failing(error ->
+                vertxTestContext.verify(() -> assertSame(DtmException.class, error.getClass()))
+                        .completeNow()));
+    }
 
-            vertxTestContext.verify(() -> {
-                assertSame(DtmException.class, ar.cause().getClass());
-            }).completeNow();
-        });
+    @Test
+    void shouldFailUnsupportedFormat(VertxTestContext vertxTestContext) {
+        //arrange
+        val request = getRequest(UUID.randomUUID(), false, createEntity(), ExternalTableFormat.CSV, SCHEMA, Collections.emptyList());
+
+        // act
+        Future<QueryResult> result = adpMppwKafkaExecutor.execute(request);
+
+        // assert
+        result.onComplete(
+                vertxTestContext.failing(error ->
+                        vertxTestContext.verify(() -> assertSame(MppwDatasourceException.class, error.getClass())).completeNow())
+        );
+    }
+
+    private MppwKafkaRequest getRequest(UUID requestId, boolean isLoadStart, Entity entity, ExternalTableFormat format, String schema, List<String> primaryKeys) {
+        return new MppwKafkaRequest(requestId, ENV, DATAMART, isLoadStart,
+                entity, SYS_CN, TABLE_NAME, new UploadExternalEntityMetadata("name", "path",
+                format, schema, 1000),
+                Collections.singletonList(new KafkaBrokerInfo(BROKER_HOST, BROKER_PORT)), TOPIC, primaryKeys);
     }
 
     private Entity createEntity() {

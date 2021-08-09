@@ -1,4 +1,4 @@
-package io.arenadata.dtm.query.execution.plugin.adp.dml.service;
+package io.arenadata.dtm.query.execution.plugin.adp.dml;
 
 import io.arenadata.dtm.cache.service.CacheService;
 import io.arenadata.dtm.common.cache.QueryTemplateKey;

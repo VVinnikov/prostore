@@ -20,6 +20,7 @@
         <module>plugins</module>
         <module>dtm-query-execution-core</module>
         <module>dtm-status-monitor</module>
+        <module>reports</module>
     </modules>
 
     <properties>
@@ -56,6 +57,7 @@
         <clickhouse.jdbc.version>0.2.4</clickhouse.jdbc.version>
         <skipITs>true</skipITs>
         <jackson.version>2.10.2</jackson.version>
+        <jacoco.version>0.8.7</jacoco.version>
     </properties>
 
     <scm>

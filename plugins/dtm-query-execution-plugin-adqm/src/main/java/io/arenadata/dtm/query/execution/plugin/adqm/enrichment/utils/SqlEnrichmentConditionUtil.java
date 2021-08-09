@@ -43,10 +43,10 @@ public class SqlEnrichmentConditionUtil {
     private static List<RexNode> createRelNodeDeltaStartedIn(RelBuilder relBuilder, DeltaInformation deltaInfo) {
         return Arrays.asList(
                 relBuilder.call(SqlStdOperatorTable.GREATER_THAN_OR_EQUAL,
-                        relBuilder.field(deltaInfo.getTableAlias(), SYS_FROM_FIELD),
+                        relBuilder.field(SYS_FROM_FIELD),
                         relBuilder.literal(deltaInfo.getSelectOnInterval().getSelectOnFrom())),
                 relBuilder.call(SqlStdOperatorTable.LESS_THAN_OR_EQUAL,
-                        relBuilder.field(deltaInfo.getTableAlias(), SYS_FROM_FIELD),
+                        relBuilder.field(SYS_FROM_FIELD),
                         relBuilder.literal(deltaInfo.getSelectOnInterval().getSelectOnTo()))
         );
     }
@@ -54,13 +54,13 @@ public class SqlEnrichmentConditionUtil {
     private static List<RexNode> createRelNodeDeltaFinishedIn(RelBuilder relBuilder, DeltaInformation deltaInfo) {
         return Arrays.asList(
                 relBuilder.call(SqlStdOperatorTable.GREATER_THAN_OR_EQUAL,
-                        relBuilder.field(deltaInfo.getTableAlias(), SYS_TO_FIELD),
+                        relBuilder.field(SYS_TO_FIELD),
                         relBuilder.literal(deltaInfo.getSelectOnInterval().getSelectOnFrom() - 1)),
                 relBuilder.call(SqlStdOperatorTable.LESS_THAN_OR_EQUAL,
-                        relBuilder.field(deltaInfo.getTableAlias(), SYS_TO_FIELD),
+                        relBuilder.field(SYS_TO_FIELD),
                         relBuilder.literal(deltaInfo.getSelectOnInterval().getSelectOnTo() - 1)),
                 relBuilder.call(SqlStdOperatorTable.EQUALS,
-                        relBuilder.field(deltaInfo.getTableAlias(), SYS_OP_FIELD),
+                        relBuilder.field(SYS_OP_FIELD),
                         relBuilder.literal(1))
         );
     }

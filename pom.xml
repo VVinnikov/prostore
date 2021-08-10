@@ -58,6 +58,14 @@
         <skipITs>true</skipITs>
         <jackson.version>2.10.2</jackson.version>
         <jacoco.version>0.8.7</jacoco.version>
+        <sonar.exclusions>
+            **/configuration/**/*
+            **/dto/**/*
+            **/extension/parser/**/*
+            **/model/**/*
+            **/properties/**/*
+            **/dtm/common/**/*
+        </sonar.exclusions>
     </properties>
 
     <scm>
@@ -99,9 +107,39 @@
                     <autoVersionSubmodules>true</autoVersionSubmodules>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
+                <configuration>
+                    <excludes>
+                        <exclude>**/configuration/**/*</exclude>
+                        <exclude>**/dto/**/*</exclude>
+                        <exclude>**/extension/parser/**/*</exclude>
+                        <exclude>**/model/**/*</exclude>
+                        <exclude>**/properties/**/*</exclude>
+                        <exclude>**/dtm/common/**/*</exclude>
+                    </excludes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>default-prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
-    </build>
 
+    </build>
     <distributionManagement>
         <repository>
             <id>data-mart-releases</id>
@@ -126,5 +164,4 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
-
 </project>

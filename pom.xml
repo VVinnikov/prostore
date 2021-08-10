@@ -58,6 +58,7 @@
         <skipITs>true</skipITs>
         <jackson.version>2.10.2</jackson.version>
         <jacoco.version>0.8.7</jacoco.version>
+        <sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
         <sonar.exclusions>
             **/configuration/**/*
             **/dto/**/*
@@ -138,8 +139,8 @@
                 </executions>
             </plugin>
         </plugins>
-
     </build>
+
     <distributionManagement>
         <repository>
             <id>data-mart-releases</id>

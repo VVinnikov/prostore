@@ -261,6 +261,25 @@ class AdqmQueryEnrichmentServiceImplTest {
     }
 
     @Test
+    void enrichWithCustomSelect(VertxTestContext testContext) {
+        // arrange
+        EnrichQueryRequest enrichQueryRequest = prepareRequestDeltaNum(
+                "SELECT *, 0 FROM shares.accounts ORDER BY account_id");
+
+        // act assert
+        queryParserService.parse(new QueryParserRequest(enrichQueryRequest.getQuery(), enrichQueryRequest.getSchema()))
+                .compose(parserResponse -> enrichService.enrich(enrichQueryRequest, parserResponse))
+                .onComplete(ar -> testContext.verify(() -> {
+                    if (ar.failed()) {
+                        fail(ar.cause());
+                    }
+
+                    String expected = "SELECT account_id, account_type, __f7 FROM (SELECT * FROM (SELECT account_id, account_type, sys_op, sys_to, sys_from, sign, sys_close_date, 0 AS __f7 FROM local__shares.accounts_actual FINAL WHERE sys_from <= 1 AND sys_to >= 1 ORDER BY account_id NULLS LAST) AS t1 WHERE (((SELECT 1 AS r FROM local__shares.accounts_actual WHERE sign < 0 LIMIT 1))) IS NOT NULL UNION ALL SELECT * FROM (SELECT account_id, account_type, sys_op, sys_to, sys_from, sign, sys_close_date, 0 AS __f7 FROM local__shares.accounts_actual WHERE sys_from <= 1 AND sys_to >= 1 ORDER BY account_id NULLS LAST) AS t8 WHERE (((SELECT 1 AS r FROM local__shares.accounts_actual WHERE sign < 0 LIMIT 1))) IS NULL) AS t13";
+                    assertEquals(expected, ar.result());
+                }).completeNow());
+    }
+
+    @Test
     void enrichWithSubquery(VertxTestContext testContext) {
         // arrange
         EnrichQueryRequest enrichQueryRequest = prepareRequestDeltaNum(

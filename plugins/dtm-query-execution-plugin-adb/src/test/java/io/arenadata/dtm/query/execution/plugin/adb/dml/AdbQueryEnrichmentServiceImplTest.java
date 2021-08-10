@@ -207,7 +207,6 @@ class AdbQueryEnrichmentServiceImplTest {
         EnrichQueryRequest enrichQueryRequest =
                 prepareRequestDeltaNum("SELECT * FROM shares.accounts a JOIN shares.transactions t ON ABS(a.account_id) = ABS(t.account_id) WHERE a.account_id > 0");
 
-
         // act assert
         queryParserService.parse(new QueryParserRequest(enrichQueryRequest.getQuery(), enrichQueryRequest.getSchema()))
                 .compose(parserResponse -> adbQueryEnrichmentService.enrich(enrichQueryRequest, parserResponse))
@@ -218,7 +217,7 @@ class AdbQueryEnrichmentServiceImplTest {
                     }
 
                     testContext.verify(() -> {
-                        assertEquals("SELECT * FROM (SELECT t1.account_id, t1.account_type, t4.transaction_id, t4.transaction_date, t4.account_id AS account_id0, t4.amount FROM (SELECT account_id, account_type, ABS(account_id) AS f2 FROM shares.accounts_actual WHERE sys_from <= 1 AND COALESCE(sys_to, 9223372036854775807) >= 1) AS t1 INNER JOIN (SELECT transaction_id, transaction_date, account_id, amount, ABS(account_id) AS f4 FROM shares.transactions_actual WHERE sys_from <= 1 AND COALESCE(sys_to, 9223372036854775807) >= 1) AS t4 ON t1.f2 = t4.f4) AS t5 WHERE t5.account_id > 0", ar.result());
+                        assertEquals("SELECT * FROM (SELECT t1.account_id, t1.account_type, t4.transaction_id, t4.transaction_date, t4.account_id AS account_id0, t4.amount FROM (SELECT account_id, account_type, ABS(account_id) AS __f2 FROM shares.accounts_actual WHERE sys_from <= 1 AND COALESCE(sys_to, 9223372036854775807) >= 1) AS t1 INNER JOIN (SELECT transaction_id, transaction_date, account_id, amount, ABS(account_id) AS __f4 FROM shares.transactions_actual WHERE sys_from <= 1 AND COALESCE(sys_to, 9223372036854775807) >= 1) AS t4 ON t1.__f2 = t4.__f4) AS t5 WHERE t5.account_id > 0", ar.result());
                     }).completeNow();
                 });
     }
@@ -341,7 +340,7 @@ class AdbQueryEnrichmentServiceImplTest {
                     }
 
                     testContext.verify(() -> {
-                        assertGrep(ar.result(), "NULL AS EXPR\\$1, NULL AS EXPR\\$2");
+                        assertGrep(ar.result(), "NULL AS EXPR__1, NULL AS EXPR__2");
                         assertGrep(ar.result(), "sys_from >= 1 AND sys_from <= 5");
                     }).completeNow();
                 });
@@ -498,6 +497,25 @@ class AdbQueryEnrichmentServiceImplTest {
                         assertGrep(ar.result(), "test_datamart.transactions_actual WHERE sys_from <= 1");
                     }).completeNow();
                 });
+    }
+
+    @Test
+    void enrichWithCustomSelect(VertxTestContext testContext) {
+        // arrange
+        EnrichQueryRequest enrichQueryRequest = prepareRequestDeltaNum(
+                "SELECT *, 0 FROM shares.accounts ORDER BY account_id");
+
+        // act assert
+        queryParserService.parse(new QueryParserRequest(enrichQueryRequest.getQuery(), enrichQueryRequest.getSchema()))
+                .compose(parserResponse -> adbQueryEnrichmentService.enrich(enrichQueryRequest, parserResponse))
+                .onComplete(ar -> testContext.verify(() -> {
+                    if (ar.failed()) {
+                        fail(ar.cause());
+                    }
+
+                    String expected = "SELECT account_id, account_type, 0 AS EXPR__2 FROM shares.accounts_actual WHERE sys_from <= 1 AND COALESCE(sys_to, 9223372036854775807) >= 1 ORDER BY account_id";
+                    assertEquals(expected, ar.result());
+                }).completeNow());
     }
 
     private EnrichQueryRequest prepareRequestMultipleSchemas(String sql) {

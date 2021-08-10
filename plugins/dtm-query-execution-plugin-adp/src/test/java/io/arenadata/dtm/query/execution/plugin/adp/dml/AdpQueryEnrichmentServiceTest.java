@@ -43,8 +43,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
 @ExtendWith(VertxExtension.class)
@@ -173,7 +172,7 @@ class AdpQueryEnrichmentServiceTest {
         queryParserService.parse(new QueryParserRequest(enrichQueryRequest.getQuery(), enrichQueryRequest.getSchema()))
                 .compose(parserResponse -> adpQueryEnrichmentService.enrich(enrichQueryRequest, parserResponse))
                 .onComplete(testContext.succeeding(result -> testContext.verify(() -> {
-                    assertTrue(result.contains("NULL AS EXPR$1, NULL AS EXPR$2"));
+                    assertTrue(result.contains("NULL AS EXPR__1, NULL AS EXPR__2"));
                     testContext.completeNow();
                 })));
     }
@@ -241,6 +240,25 @@ class AdpQueryEnrichmentServiceTest {
                     assertTrue(result.contains("test_datamart.transactions_actual WHERE sys_from <= 1"));
                     testContext.completeNow();
                 })));
+    }
+
+    @Test
+    void enrichWithCustomSelect(VertxTestContext testContext) {
+        // arrange
+        EnrichQueryRequest enrichQueryRequest = prepareRequestDeltaNum(
+                "SELECT *, 0 FROM shares.accounts ORDER BY account_id");
+
+        // act assert
+        queryParserService.parse(new QueryParserRequest(enrichQueryRequest.getQuery(), enrichQueryRequest.getSchema()))
+                .compose(parserResponse -> adpQueryEnrichmentService.enrich(enrichQueryRequest, parserResponse))
+                .onComplete(ar -> testContext.verify(() -> {
+                    if (ar.failed()) {
+                        fail(ar.cause());
+                    }
+
+                    String expected = "SELECT account_id, account_type, 0 AS EXPR__2 FROM shares.accounts_actual WHERE sys_from <= 1 AND COALESCE(sys_to, 9223372036854775807) >= 1 ORDER BY account_id";
+                    assertEquals(expected, ar.result());
+                }).completeNow());
     }
 
     private EnrichQueryRequest prepareRequestMultipleSchemas(String sql) {

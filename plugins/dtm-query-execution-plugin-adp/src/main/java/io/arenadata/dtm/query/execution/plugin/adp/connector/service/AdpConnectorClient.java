@@ -27,7 +27,7 @@ public class AdpConnectorClient {
     private final AdpMppwProperties mppwProperties;
     private final AdpMpprProperties mpprProperties;
 
-    public AdpConnectorClient(@Qualifier("coreWebClient") WebClient webClient,
+    public AdpConnectorClient(@Qualifier("adpWebClient") WebClient webClient,
                               AdpMppwProperties mppwProperties,
                               AdpMpprProperties mpprProperties) {
         this.webClient = webClient;

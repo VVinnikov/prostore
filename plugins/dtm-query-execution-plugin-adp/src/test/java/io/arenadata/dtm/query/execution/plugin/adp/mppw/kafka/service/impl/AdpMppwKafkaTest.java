@@ -15,7 +15,6 @@ import io.arenadata.dtm.query.execution.plugin.adp.connector.dto.AdpConnectorMpp
 import io.arenadata.dtm.query.execution.plugin.adp.mppw.factory.AdpTransferDataSqlFactory;
 import io.arenadata.dtm.query.execution.plugin.adp.mppw.transfer.AdpTransferDataService;
 import io.arenadata.dtm.query.execution.plugin.api.exception.MppwDatasourceException;
-import io.arenadata.dtm.query.execution.plugin.api.mppw.MppwRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.MppwKafkaRequest;
 import io.arenadata.dtm.query.execution.plugin.api.mppw.kafka.UploadExternalEntityMetadata;
 import io.vertx.core.Future;

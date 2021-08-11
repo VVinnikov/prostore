@@ -4,12 +4,9 @@ import io.arenadata.dtm.common.exception.DtmException;
 import io.arenadata.dtm.common.version.VersionInfo;
 import io.arenadata.dtm.query.execution.plugin.adp.base.properties.AdpMpprProperties;
 import io.arenadata.dtm.query.execution.plugin.adp.base.properties.AdpMppwProperties;
-import io.arenadata.dtm.query.execution.plugin.adp.connector.dto.AdpConnectorMpprRequest;
-import io.arenadata.dtm.query.execution.plugin.adp.connector.dto.AdpConnectorMppwStartRequest;
-import io.arenadata.dtm.query.execution.plugin.adp.connector.dto.AdpConnectorMppwStopRequest;
+import io.arenadata.dtm.query.execution.plugin.adp.connector.dto.*;
 import io.arenadata.dtm.query.execution.plugin.api.exception.DataSourceException;
 import io.vertx.core.Future;
-import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
@@ -30,10 +27,10 @@ public class AdpConnectorClient {
     private final AdpMppwProperties mppwProperties;
     private final AdpMpprProperties mpprProperties;
 
-    public AdpConnectorClient(@Qualifier("coreVertx") Vertx vertx,
+    public AdpConnectorClient(@Qualifier("adpWebClient") WebClient webClient,
                               AdpMppwProperties mppwProperties,
                               AdpMpprProperties mpprProperties) {
-        this.webClient = WebClient.create(vertx);
+        this.webClient = webClient;
         this.mppwProperties = mppwProperties;
         this.mpprProperties = mpprProperties;
     }

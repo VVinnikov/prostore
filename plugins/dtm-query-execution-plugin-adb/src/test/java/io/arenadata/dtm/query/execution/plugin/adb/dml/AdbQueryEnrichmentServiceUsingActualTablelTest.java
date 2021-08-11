@@ -153,7 +153,7 @@ class AdbQueryEnrichmentServiceUsingActualTablelTest {
         queryParserService.parse(new QueryParserRequest(enrichQueryRequest.getQuery(), enrichQueryRequest.getSchema()))
                 .compose(parserResponse -> adbQueryEnrichmentService.enrich(enrichQueryRequest, parserResponse))
                 .onComplete(testContext.succeeding(result -> testContext.verify(() -> {
-                    assertTrue(result.contains("NULL AS EXPR$1, NULL AS EXPR$2"));
+                    assertTrue(result.contains("NULL AS EXPR__1, NULL AS EXPR__2"));
                     testContext.completeNow();
                 })));
     }

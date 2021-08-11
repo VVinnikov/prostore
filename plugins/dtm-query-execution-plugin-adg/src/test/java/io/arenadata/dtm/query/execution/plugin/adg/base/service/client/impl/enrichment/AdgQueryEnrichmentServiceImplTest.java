@@ -165,6 +165,25 @@ class AdgQueryEnrichmentServiceImplTest {
                         "\"local__test_datamart__transactions_actual\" WHERE \"sys_from\" <= 2"));
     }
 
+    @Test
+    void enrichWithCustomSelect(VertxTestContext testContext) {
+        // arrange
+        EnrichQueryRequest enrichQueryRequest = prepareRequestDeltaNum(
+                "SELECT *, 0 FROM shares.accounts ORDER BY account_id");
+
+        // act assert
+        queryParserService.parse(new QueryParserRequest(enrichQueryRequest.getQuery(), enrichQueryRequest.getSchema()))
+                .compose(parserResponse -> enrichService.enrich(enrichQueryRequest, parserResponse))
+                .onComplete(ar -> testContext.verify(() -> {
+                    if (ar.failed()) {
+                        fail(ar.cause());
+                    }
+
+                    String expected = "SELECT \"account_id\", \"account_type\", 0 AS \"EXPR__2\" FROM (SELECT \"account_id\", \"account_type\" FROM \"local__shares__accounts_history\" WHERE \"sys_from\" <= 1 AND \"sys_to\" >= 1 UNION ALL SELECT \"account_id\", \"account_type\" FROM \"local__shares__accounts_actual\" WHERE \"sys_from\" <= 1) AS \"t3\" ORDER BY \"account_id\"";
+                    assertEquals(expected, ar.result());
+                }).completeNow());
+    }
+
     private void enrichWithGrep(EnrichQueryRequest enrichRequest,
                                 List<String> expectedValues) {
         enrichWith(enrichRequest, expectedValues, true);

@@ -1,8 +1,7 @@
-package io.arenadata.dtm.query.execution.plugin.adp.converter;
+package io.arenadata.dtm.query.execution.plugin.adp.db.converter;
 
 import io.arenadata.dtm.common.converter.SqlTypeConverter;
 import io.arenadata.dtm.common.model.ddl.ColumnType;
-import io.arenadata.dtm.query.execution.plugin.adp.db.converter.AdpFromSqlConverter;
 import io.vertx.core.json.JsonObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

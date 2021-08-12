@@ -134,8 +134,8 @@ adqm:
     consumerGroup: adqm
     kafkaBrokers: dtm.kafka.it.broker:9093
     loadType: REST
-    restStartLoadUrl: http://dtm.kafka.writer.it:8090/newdata/adqm/start
-    restStopLoadUrl: http://dtm.kafka.writer.it:8090/newdata/adqm/stop
+    restStartLoadUrl: http://dtm.kafka.writer.it:8090/newdata/start
+    restStopLoadUrl: http://dtm.kafka.writer.it:8090/newdata/stop
     restLoadConsumerGroup: emulator-load-adqm
 
   web-client:

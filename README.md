@@ -20,20 +20,12 @@ We can specify profile via environment variable SPRING_PROFILES_ACTIVE or via sp
 
 For MPPW support you also need to confugure & run [dtm-vendor-emulator](https://github.com/arenadata/dtm-vendor-emulator) & [dtm-adb-emulator-writer](https://github.com/arenadata/dtm-adb-emulator-writer).
 
-### Build application
-
-#### Start required services
-
-```shell script
-cd dtm-query-execution-core
-docker-compose -f environment/docker-compose-build.yml up -d
-```
-
 #### Build project using maven
 
 ```shell script
+cd ~/prostore
 # without any tests
-mvn package -P local -D skipTests
+mvn install -D skipTests
 
 # with unit and integration tests
 mvn verify -P local
@@ -43,8 +35,8 @@ mvn verify -P local
 #### Run main service as a single jar
 
 ```shell script
-cd dtm-query-execution-core
-java -Dspring.profiles.active=dev -jar target/dtm-query-execution-core-5.1.0.jar
+cd ~/dtm-query-execution-core
+java -Dspring.profiles.active=default -jar target/dtm-query-execution-core-5.1.0.jar
 ```
 and use port 35286 for debugger and 8088 fo DTM JDBC driver.
 

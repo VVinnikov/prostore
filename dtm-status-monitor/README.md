@@ -26,7 +26,7 @@ Response:
 Build:
 
 ```shell script
-cd dtm/dtm-status-monitor
+cd prostore/dtm-status-monitor
 mvn clean package
 docker build -t dtm-status-monitor .
 ```

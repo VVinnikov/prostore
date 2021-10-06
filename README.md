@@ -14,7 +14,6 @@ git clone https://github.com/arenadata/prostore
 # build without any tests
 cd ~/prostore
 mvn clean
-# build without any tests
 mvn install -DskipTests=true
 ```
 The resulting jar file is located in the `dtm-query-execution-core/target` folder.

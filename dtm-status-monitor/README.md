@@ -9,7 +9,7 @@ actually subscribes on `__consumer_offsets` and provides information about statu
 The cloning and building of this service is the part of the [Prostore deployment](../README.md).
 The resulting jar file is located in the `dtm-status-monitor/target` folder.
 
-### App configuration
+### Service configuration
 The status-monitor configuration file is located in the `dtm-status-monitor/src/main/resources` folder.
 The status-monitor service looks for the configuration in the same subfolder (target) where `dtm-status-monitor-<version>.jar` is executed.
 So we create the respective symbolic link

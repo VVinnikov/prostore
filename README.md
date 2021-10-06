@@ -54,4 +54,4 @@ URL is `jdbc:adtm://<host>:<port>/`:
 - `host` is host of dtm-query-execution-core (`localhost`)
 - `port` is port of dtm-query-execution-core (see actual `application.yml` for dtm-query-execution-core)
 
-See also [connection with JDBC-client (Rus)](https://vvinnikov.github.io/docs_prostore/working_with_system/connection/connection_via_sql_client/connection_via_sql_client.html)
+See also [connection with JDBC-client (Rus)](https://arenadata.github.io/docs_prostore/working_with_system/connection/connection_via_sql_client/connection_via_sql_client.html)

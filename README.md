@@ -44,8 +44,8 @@ java -jar dtm-query-execution-core-<version>.jar
 ```
 
 #### Change default port to run Prostore
--    change the value of the key the configuration file: `management:server:port`
--    run the main service `java -Dserver.port=<DTM_METRICS_PORT> -jar dtm-query-execution-core-<version>.jar` 
+-    change the value of the key `management:server:port` in the configuration file,
+-    run the main service `java -Dserver.port=<DTM_METRICS_PORT> -jar dtm-query-execution-core-<version>.jar`.
 
 ## Setup JDBC test client
 

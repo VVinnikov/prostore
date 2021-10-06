@@ -42,7 +42,6 @@ If no configuration file is located, then the Prostore application uses its inte
 cd ~/dtm-query-execution-core/target
 java -jar dtm-query-execution-core-<version>.jar
 ```
-The ports for debugger and DTM JDBC driver are respectively 35286 and 8088.
 
 #### Change default port to run Prostore
 -    change the value of the key the configuration file: `management:server:port`

@@ -39,7 +39,7 @@ If no configuration file is located, then the Prostore application uses its inte
 
 #### Run main service as a single jar on the default port 8080
 ```shell script
-cd ~/dtm-query-execution-core/target
+cd ~/prostore/dtm-query-execution-core/target
 java -jar dtm-query-execution-core-<version>.jar
 ```
 
